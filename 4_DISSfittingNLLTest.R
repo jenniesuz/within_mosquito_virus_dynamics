@@ -1,0 +1,138 @@
+library(gridExtra)
+library(ggplot2)
+library(binom)
+library(beepr)
+
+#********test fitting procedure and initial parameter value estimates
+
+source("4_DISSfittingFuncsNLL.R")
+source("4_DISSmodelFunc.R")
+source("3_INFfittingNLLParameterEstimates.R")
+
+#******************data to fit to********************
+competenceDat <- read.csv("datCiotaOnyango.csv")
+competenceDat <- competenceDat[competenceDat$Ref %in% "Onyango 2020",]
+bin <- binom.confint(x=competenceDat$NumDiss,n=competenceDat$NumInf,method="exact")
+competenceDat$meanDiss <- bin$mean
+competenceDat$lowerDiss <- bin$lower
+competenceDat$upperDiss <- bin$upper
+#****************************************************
+
+
+#*************************************************************
+virus_params <- function(   muV=0.1
+                            ,infRate=10^-7
+                            ,prodRate =   10 
+                            ,cellSpread = 10^-8
+                            ,escapeRate = 0.005
+                            ,cMax = 400            
+                            ,hMax = 900             
+)
+  return(as.list(environment()))
+#**************************************************************
+
+
+testAlb <- sim.func(10^competenceDat$Conc.Min[1],parms=virus_params(infRate=albinfRate,muV=albMuV))
+
+#**********first remove simulations where an infection didn't occur**********************
+inf <- ddply(testAlb,.(run,conc),summarise,occurred=sum(inf))  # establish if infection occurred
+inf$occurred[inf$occurred>0] <- 1
+inf$runConc <- paste(inf$run,inf$conc)
+noInf <- inf$runConc[inf$occurred == 0]                         # note run and concs where infection didn't occur
+
+testAlb$runConc <- paste(testAlb$run,testAlb$conc)           # remove these from the dissemination dataset
+testAlb <- testAlb[!testAlb$runConc %in% noInf,]
+#*******************************************************************************
+
+testAlb$days <- round(testAlb$t/24,1)  # create a column of .1 days
+  
+lastRunPerDay <- lapply(unique(testAlb$run),function(y){
+    runD <- testAlb[testAlb$run %in% y,]  # select single run
+    maxTimePerDay <- lapply(unique(runD$days),function(z){
+      mtestAlb <- runD[runD$days %in% z,]
+      maxT <- mtestAlb[mtestAlb$t %in% max(mtestAlb$t),]
+      return(maxT[1,])
+    })
+    maxTimePerDay <- do.call(rbind.data.frame,maxTimePerDay)
+    return(maxTimePerDay)
+  })
+lastRunPerDay <- do.call(rbind.data.frame,lastRunPerDay)
+  
+  tempDiss <- lapply(unique(lastRunPerDay$days),function(a){
+    subDat <- lastRunPerDay[lastRunPerDay$days %in% a,]
+    HciInf <- length(subDat$Hci[subDat$Hci>0])
+    propDiss <- HciInf/ length(unique(subDat$run))
+    return(c(a,propDiss))
+  })
+  tempDiss2 <- do.call(rbind.data.frame,tempDiss)
+  names(tempDiss2) <- c("time","proportionDisseminated")
+
+ggplot(tempDiss2) + 
+  geom_point(data=competenceDat,aes(x=DPIDissorTrans,y=meanDiss))+
+  geom_errorbar(data=competenceDat,aes(x=DPIDissorTrans,ymin=lowerDiss,ymax=upperDiss)) +
+  geom_line(aes(x=time,y=proportionDisseminated)) +
+  xlab("Time (days)") +
+  ylab("Proportion of infected simulations with disseminated infection") +
+  ylim(0,1) +
+  labs(col=expression("Input virus concentration (log"[10]*")")) 
+
+
+
+
+
+
+
+#***************************************************************************
+init.pars.fit1 <- c(   
+  log_prodRate =   log(10) 
+  ,log_cellSpread = log(10^-3.5)  
+  ,log_escapeRate = log(0.05)   
+)
+#**************Optimise*******************************************
+trace <- 3
+
+optim.vals <- optim(par = init.pars.fit1
+                    , objFXN
+                    , fixed.params = virus_params()
+                    , dat = competenceDat
+                    , control = list(trace = trace, maxit = 200, reltol = 10^-7.5)
+                    , method = "Nelder-Mead" # 
+                    , hessian = T)
+optim.vals # convergence 0 means algorithm converged
+beep()
+
+MLEfits <- optim.vals$par 
+exp(MLEfits)
+
+##
+
+test <- sim.func(10^8,parms=virus_params(
+  prodRate=exp(MLEfits)[1]
+  ,cellSpread=exp(MLEfits)[2]
+  ,escapeRate=exp(MLEfits)[3]
+))
+
+tempDiss <- lapply(unique(test$t),function(z){
+  subDat <- test[test$t %in% z,]
+  MciInf <- length(subDat$Mci[subDat$Mci>0])
+  HciInf <- length(subDat$Hci[subDat$Hci>0])
+  propDiss <- HciInf/ MciInf
+  return(c(z,propDiss))
+}) 
+tempDiss1 <- do.call(rbind.data.frame,tempDiss)
+names(tempDiss1) <- c("time","proportionDisseminated")
+tempDiss1 <- tempDiss1[!tempDiss1$t %in% 0,]
+
+ggplot(tempDiss1) + 
+  geom_point(data=onyango,aes(x=DPIDissorTrans,y=meanDiss,fill=factor(Moz)),shape=21) +
+  geom_errorbar(data=onyango,aes(x=DPIDissorTrans,ymin=lowerDiss,ymax=upperDiss)) +
+  geom_line(aes(x=time/24,y=proportionDisseminated)) +
+  xlab("Time (days)") +
+  ylab("Proportion of infected simulations with disseminated infection") +
+  ylim(0,1) +
+  labs(col=expression("Input virus concentration (log"[10]*")")) 
+
+
+
+
+

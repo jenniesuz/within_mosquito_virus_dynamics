@@ -90,7 +90,7 @@ end_time <- Sys.time()
 timeTaken <- end_time - start_time
 timeTaken
 
-saveRDS(aegInfSims,"aegInfSims.rds")
+saveRDS(aegSims,"aegInfSims.rds")
 
 #*********Ae albopictus********
 
@@ -110,7 +110,7 @@ end_time <- Sys.time()
 timeTaken <- end_time - start_time
 timeTaken
 
-saveRDS(albSims,"albSims.rds")
+saveRDS(albSims,"albInfSims.rds")
 
 #********************************************************
 

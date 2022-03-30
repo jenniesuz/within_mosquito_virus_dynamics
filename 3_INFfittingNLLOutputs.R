@@ -15,11 +15,11 @@ albParams <- sapply(alb,"[[",2)
 
 aeg <- cbind.data.frame(muV=aegParams[1,]        # convert from list to dataframe
                            ,infRate=aegParams[2,]
-                           ,moz="Ae. aegypti"
+                           ,species="Ae. aegypti"
                            )
 alb <- cbind.data.frame(muV=albParams[1,]
                            ,infRate=albParams[2,]
-                           ,moz="Ae. albopictus"
+                           ,species="Ae. albopictus"
                            )
 
 dat <- rbind.data.frame(aeg,alb)
@@ -27,11 +27,11 @@ dat <- rbind.data.frame(aeg,alb)
 
 #****************Plot fitted parameter value estimates**********
 
-muVPlot <- ggplot(params,aes(x=escapeRate,fill=species)) + 
+muVPlot <- ggplot(dat,aes(x=muV,fill=species)) + 
   geom_histogram(position="identity", alpha = 0.3) +
   scale_fill_manual(values=c("royalblue4","dodgerblue")) +
   scale_x_log10() +
-  xlab("Escape rate") +
+  xlab("Virus decay rate") +
   ylab("Number of fits") +
   labs(fill="") +
   ylab("Number of fits") +
@@ -48,7 +48,7 @@ muVPlot <- ggplot(params,aes(x=escapeRate,fill=species)) +
 
 
 betaPlot <- ggplot(dat,aes(x=infRate)) + 
-  geom_histogram(data=dat,aes(fill = moz), alpha = 0.6) +
+  geom_histogram(data=dat,aes(fill = species), alpha = 0.6) +
   scale_fill_manual(values=c("royalblue4","dodgerblue")) +
   scale_x_log10() +
   labs(fill="") +
@@ -94,7 +94,6 @@ infFitsPlot <- ggplot(competenceDat) +
   geom_line(data=sims,aes(x=log10(Conc.Min),y=meanInf,col=Moz,group=parmsComb),linetype=3,alpha=0.7) +
   geom_errorbar(aes(x=Conc.Min,ymin=lowerInf,ymax=upperInf),alpha=0.5) +
   geom_point(aes(x=Conc.Min,y=meanInf,fill=Moz),shape=21)+
-  # geom_point(data=sims,aes(x=log10(Conc.Min),y=meanInf,col=Moz),size=2)  +
   xlab(expression(paste("Virus concentration (log"[10]," PFU/ml)"))) +
   labs(fill="",title="A") +
   scale_fill_manual(values=c("royalblue4","dodgerblue")) +
