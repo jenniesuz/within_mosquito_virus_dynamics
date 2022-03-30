@@ -61,4 +61,30 @@ sim.func <- function(x,parms) with(c(parms), {
 
 
 
+dissSummaryFunc <- function(dissModelOutput){
+    dissModelOutput$days <- round(dissModelOutput$t/24,1)  # create a column of .1 days
+    
+    lastRunPerDay <- lapply(unique(dissModelOutput$run),function(y){
+      runD <- dissModelOutput[dissModelOutput$run %in% y,]  # select single run
+      maxTimePerDay <- lapply(unique(runD$days),function(z){
+        mtemp <- runD[runD$days %in% z,]
+        maxT <- mtemp[mtemp$t %in% max(mtemp$t),]
+        return(maxT[1,])
+      })
+      maxTimePerDay <- do.call(rbind.data.frame,maxTimePerDay)
+      return(maxTimePerDay)
+    })
+    lastRunPerDay <- do.call(rbind.data.frame,lastRunPerDay)
+    
+    tempDiss <- lapply(unique(lastRunPerDay$days),function(a){
+      subDat <- lastRunPerDay[lastRunPerDay$days %in% a,]
+      HciInf <- length(subDat$Hci[subDat$Hci>0])
+      propDiss <- HciInf/ length(unique(subDat$run))
+      return(c(a,propDiss))
+    })
+    tempDiss2 <- do.call(rbind.data.frame,tempDiss)
+    names(tempDiss2) <- c("time","proportionDisseminated")
+
+return(tempDiss2)
+}
 

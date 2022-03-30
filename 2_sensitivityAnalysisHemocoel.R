@@ -7,6 +7,34 @@ library(parallel)
 require(sensitivity)
 
 #**************************************************************************
+
+dissSummaryFunc <- function(dissModelOutput){
+  dissModelOutput$days <- round(dissModelOutput$t/24,1)  # create a column of .1 days
+  
+  lastRunPerDay <- lapply(unique(dissModelOutput$run),function(y){
+    runD <- dissModelOutput[dissModelOutput$run %in% y,]  # select single run
+    maxTimePerDay <- lapply(unique(runD$days),function(z){
+      mtemp <- runD[runD$days %in% z,]
+      maxT <- mtemp[mtemp$t %in% max(mtemp$t),]
+      return(maxT[1,])
+    })
+    maxTimePerDay <- do.call(rbind.data.frame,maxTimePerDay)
+    return(maxTimePerDay)
+  })
+  lastRunPerDay <- do.call(rbind.data.frame,lastRunPerDay)
+  
+  tempDiss <- lapply(unique(lastRunPerDay$days),function(a){
+    subDat <- lastRunPerDay[lastRunPerDay$days %in% a,]
+    HciInf <- length(subDat$Hci[subDat$Hci>0])
+    propDiss <- HciInf/ length(unique(subDat$run))
+    return(c(a,propDiss))
+  })
+  tempDiss2 <- do.call(rbind.data.frame,tempDiss)
+  names(tempDiss2) <- c("time","proportionDisseminated")
+  return(tempDiss2)
+}
+
+
 #************************Varying input virus concentration**********
 virusConcs <- c(10^5,10^6,10^7,10^8)
 
@@ -97,31 +125,9 @@ doseSim2 <- doseSim2[!doseSim2$runConc %in% noInf,]
 
 diss <- lapply(unique(doseSim2$virusConc),function(x){
   temp <- doseSim2[doseSim2$virusConc %in% x,]   # for each input virus concentration
-
-  temp$days <- round(temp$t/24,1)  # create a column of .1 days
-  
-  lastRunPerDay <- lapply(unique(temp$run),function(y){
-    runD <- temp[temp$run %in% y,]  # select single run
-    maxTimePerDay <- lapply(unique(runD$days),function(z){
-      mtemp <- runD[runD$days %in% z,]
-      maxT <- mtemp[mtemp$t %in% max(mtemp$t),]
-      return(maxT[1,])
-    })
-    maxTimePerDay <- do.call(rbind.data.frame,maxTimePerDay)
-    return(maxTimePerDay)
-  })
-  lastRunPerDay <- do.call(rbind.data.frame,lastRunPerDay)
-  
-  tempDiss <- lapply(unique(lastRunPerDay$days),function(a){
-    subDat <- lastRunPerDay[lastRunPerDay$days %in% a,]
-    HciInf <- length(subDat$Hci[subDat$Hci>0])
-    propDiss <- HciInf/ length(unique(subDat$run))
-    return(c(a,propDiss))
-  })
-  tempDiss2 <- do.call(rbind.data.frame,tempDiss)
-  names(tempDiss2) <- c("time","proportionDisseminated")
-  tempDiss2$conc <- x
-  return(tempDiss2)
+  tempDiss <-dissSummaryFunc(temp)
+  tempDiss$conc <- x
+  return(tempDiss)
 })
 
 diss2 <- do.call(rbind.data.frame,diss)

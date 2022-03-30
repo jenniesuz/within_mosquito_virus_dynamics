@@ -36,22 +36,9 @@ nll.binom <- function(parms=virus_params(),dat=competenceDat){
     ll <- -1000000000
   }else{     
     
-      sim <- sim.func(10^round(dat$Conc.Min[1],0),parms=parms)
-      
-      sim$days <- round(sim$t/24,4)
-        tempDiss <- lapply(unique(sim$days),function(z){ # for all runs sample a time point
-          subDat <- sim[sim$days %in% z,]               # at that time point total number of runs that
-          HciInf <- length(subDat$Hci[subDat$Hci>0])   # have Hci>0
-          MvInf <- length(subDat$Mv[subDat$Mv>0])
-          if(MvInf==0){propDiss<-0}else{
-            propDiss <- HciInf/ MvInf 
-          }#proportion 
-          return(c(z,propDiss))
-        })
-      tempDiss <- do.call(rbind.data.frame,tempDiss)
-      names(tempDiss) <- c("time","proportionDisseminated")
-  
-      subSim <- tempDiss[tempDiss$days %in% as.numeric(dat$DPIDissorTrans),]
+      sim <- sim.func(10^dat$Conc.Min[1],parms=parms)
+      tempDiss <- dissSummaryFunc(sim)
+      subSim <- tempDiss[tempDiss$time %in% as.numeric(dat$DPIDissorTrans),]
       
     subSim$proportionDisseminated[subSim$proportionDisseminated %in% 0]<- 0.000000000001
     subSim$proportionDisseminated[subSim$proportionDisseminated %in% 1]<- 0.999999999999

@@ -3,8 +3,8 @@ library(ggplot2)
 library(binom)
 library(beepr)
 
-source("5_DISSfittingFuncsNLL.R")
-source("5_DISSmodelFunc.R")
+source("4_DISSfittingFuncsNLL.R")
+source("4_DISSmodelFunc.R")
 
 virus_params <- function(   muV=0.1
                             ,infRate=10^-7   
@@ -16,10 +16,18 @@ virus_params <- function(   muV=0.1
 )
   return(as.list(environment()))
 
+
 #******************data to fit to********************
-source("5_dataForFitting.R")
+competenceDat <- read.csv("datCiotaOnyango.csv")
+competenceDat <- competenceDat[competenceDat$Ref %in% "Onyango 2020",]
+bin <- binom.confint(x=competenceDat$NumDiss,n=competenceDat$NumInf,method="exact")
+competenceDat$meanDiss <- bin$mean
+competenceDat$lowerDiss <- bin$lower
+competenceDat$upperDiss <- bin$upper
+#****************************************************
+
 #*****************parameter estimates from midgut infection*********************
-source("5_INFfittingNLLParameterEstimates.R")
+source("3_INFfittingNLLParameterEstimates.R")
 #*********************************************************************
 #**************************Function to wrap fitting and simulations for iteration*************
 fitToDataFunc <- function(x
@@ -52,7 +60,7 @@ fitToDataFunc <- function(x
 
 
 aeg <- mclapply(1:100,fitToDataFunc
-                ,dataSet=onyango[(onyango$Moz %in% "Ae. aegypti"),]
+                ,dataSet=competenceDat[(cimpetenceDat$Moz %in% "Ae. aegypti"),]
                 ,pIFit=aeginfRate
                 ,muVFit=aegMuV
                 ,prodRate=50
@@ -60,17 +68,17 @@ aeg <- mclapply(1:100,fitToDataFunc
                 ,escapeRate=0.09
 )
 
-saveRDS(aeg,"aegDissFits220322.rds")
+saveRDS(aeg,"aegDissFits.rds")
 
 
-alb <- mclapply(1:100,fitToDataFunc
-                ,dataSet=onyango[(onyango$Moz %in% "Ae. albopictus"),]
+alb <- mclapply(1:1,fitToDataFunc
+                ,dataSet=competenceDat[(competenceDat$Moz %in% "Ae. albopictus"),]
                 ,pIFit=albinfRate
                 ,muVFit=aegMuV
                 ,prodRate=10
                 ,cellSpread=10^-6
                 ,escapeRate=0.005)
-saveRDS(alb,"albDissFits220322.rds")
+saveRDS(alb,"albDissFits.rds")
 
 
 
