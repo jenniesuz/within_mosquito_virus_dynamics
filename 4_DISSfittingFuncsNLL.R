@@ -37,6 +37,15 @@ nll.binom <- function(parms=virus_params(),dat=competenceDat){
   }else{     
     
       sim <- sim.func(10^dat$Conc.Min[1],parms=parms)
+      
+      #**********first remove simulations where an infection didn't occur**********************
+      inf <- ddply(sim,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
+      inf$occurred[inf$occurred>0] <- 1
+      noInf <- inf$run[inf$occurred == 0]                         # note run and concs where infection didn't occur
+      # remove these from the dissemination dataset
+      sim <- sim[!sim$run %in% noInf,]
+      #*******************************************************************************
+      
       tempDiss <- dissSummaryFunc(sim)
       subSim <- tempDiss[tempDiss$time %in% as.numeric(dat$DPIDissorTrans),]
       
