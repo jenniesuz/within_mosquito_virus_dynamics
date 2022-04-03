@@ -65,13 +65,11 @@ names(aegDissSims)[7] <- "subRun"
 names(albDissSims)[7] <- "subRun"
 
 #**********first remove simulations where an infection didn't occur**********************
-inf <- ddply(aegDissSims,.(run,conc),summarise,occurred=sum(inf))  # establish if infection occurred
+inf <- ddply(aegDissSims,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
 inf$occurred[inf$occurred>0] <- 1
-inf$runConc <- paste(inf$run,inf$conc)
-noInf <- inf$runConc[inf$occurred == 0]                         # note run and concs where infection didn't occur
+noInf <- inf$run[inf$occurred == 0]                         # note run and concs where infection didn't occur
 
-aegDissSims$runConc <- paste(aegDissSims$run,aegDissSims$conc)           # remove these from the dissemination dataset
-aegDissSims <- aegDissSims[!aegDissSims$runConc %in% noInf,]
+aegDissSims <- aegDissSims[!aegDissSims$run %in% noInf,]
 #*******************************************************************************
 
 aegDissSims2 <- lapply(unique(aegDissSims$run),function(y){
@@ -90,6 +88,16 @@ names(aegDissSims)[3] <- "DPIDissorTrans"
 names(aegDissSims)[2] <- "meanDiss"
 
 #********************
+#*#**********first remove simulations where an infection didn't occur**********************
+inf <- ddply(albDissSims,.(run,conc),summarise,occurred=sum(inf))  # establish if infection occurred
+inf$occurred[inf$occurred>0] <- 1
+inf$runConc <- paste(inf$run,inf$conc)
+noInf <- inf$runConc[inf$occurred == 0]                         # note run and concs where infection didn't occur
+
+albDissSims$runConc <- paste(albDissSims$run,albDissSims$conc)           # remove these from the dissemination dataset
+albDissSims <- albDissSims[!albDissSims$runConc %in% noInf,]
+#*******************************************************************************
+
 albDissSims2 <- lapply(unique(albDissSims$run),function(y){
   temp <- albDissSims[albDissSims$run %in% y,]
   diss <- dissSummaryFunc(temp)

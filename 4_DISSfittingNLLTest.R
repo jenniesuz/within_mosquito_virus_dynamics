@@ -35,13 +35,11 @@ virus_params <- function(   muV=0.1
 testAlb <- sim.func(10^competenceDat$Conc.Min[1],parms=virus_params(infRate=albinfRate,muV=albMuV))
 
 #**********first remove simulations where an infection didn't occur**********************
-inf <- ddply(testAlb,.(run,conc),summarise,occurred=sum(inf))  # establish if infection occurred
+inf <- ddply(testAlb,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
 inf$occurred[inf$occurred>0] <- 1
-inf$runConc <- paste(inf$run,inf$conc)
-noInf <- inf$runConc[inf$occurred == 0]                         # note run and concs where infection didn't occur
+noInf <- inf$run[inf$occurred == 0]                         # note run and concs where infection didn't occur
 
-testAlb$runConc <- paste(testAlb$run,testAlb$conc)           # remove these from the dissemination dataset
-testAlb <- testAlb[!testAlb$runConc %in% noInf,]
+testAlb <- testAlb[!testAlb$run %in% noInf,]
 #*******************************************************************************
 
 testAlb$days <- round(testAlb$t/24,1)  # create a column of .1 days
