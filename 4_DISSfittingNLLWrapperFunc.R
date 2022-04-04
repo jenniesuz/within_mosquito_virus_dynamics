@@ -85,17 +85,7 @@ saveRDS(alb,"albDissFits.rds")
 
 
 
-
-
-
-
 #*******************************Simulate with fitted values**********************
-# read in model fits fits
-# read in model fits fits
-alb <- readRDS("albDissFits220322.rds")
-aeg <- readRDS("aegDissFits220322.rds")
-
-# function to change to dataframe and then bind together
 # function to change to dataframe and then bind together
 listToDat <- function(output=alb, species="alb"){
   params <- lapply(1:length(output),function(x){
@@ -111,25 +101,26 @@ listToDat <- function(output=alb, species="alb"){
   return(params)
 }
 
-alb <- listToDat()
+
+
+#******************************aegypti****************************************
+# read in model fits fits
+aeg <- readRDS("aegDissFits.rds")
 aeg <- listToDat(output=aeg,species="aeg")
-
+aeg$run <- 1:length(aeg[,1])
 #********************************************
+
 start_time <- Sys.time()
-
-#length(albLI24Params[,1])
-
-alb$run <- 1:length(alb[,1])
-
 no_cores <- detectCores() - 1
 cl <- makeCluster(no_cores)
 
-albSims <- parRapply(cl,alb,function(y){
-  source("5_DISSmodelFunc.R")
-  source("5_dataForFitting.R")
-  source("5_INFfittingNLLParameterEstimates.R")
+aegSims <- parRapply(cl,aeg,function(y){
+  source("4_DISSmodelFunc.R")
+  source("3_INFfittingNLLParameterEstimates.R")
+  competenceDat <- read.csv("datCiotaOnyango.csv")
+  competenceDat <- competenceDat[competenceDat$Ref %in% "Onyango 2020",]
   virus_params <- function( muV=aegMuV
-                              ,infRate=albinfRate
+                              ,infRate=aeginfRate
                               ,prodRate =   as.numeric(y[1])
                               ,cellSpread = as.numeric(y[2])
                               ,escapeRate = as.numeric(y[3])   
@@ -138,10 +129,73 @@ albSims <- parRapply(cl,alb,function(y){
   )
   return(as.list(environment()))
   
-  sim.res <- sim.func(x=10^round(onyango$Conc.Min[1],0),parms=virus_params())
+  sim.res <- sim.func(x=10^round(competenceDat$Conc.Min[1],0),parms=virus_params())
   
-  run <- y[5]
-  return(cbind.data.frame(sim.res,run))
+  mainRun <- y[5]
+  return(cbind.data.frame(sim.res,mainRun))
+  
+})
+
+stopCluster(cl)
+
+
+end_time <- Sys.time()
+timeTaken <- end_time - start_time
+timeTaken
+
+aegSimsdf <- do.call(rbind,aegSims)
+aegSimsdf$mainRun <- as.factor(aegSimsdf$mainRun)
+
+#*******summarise*******
+sumAeg <- lapply(unique(aegSimsdf$mainRun),function(y){
+  temp <- aegSimsdf[aegSimsdf$mainRun %in% y,]  
+  #**********first remove simulations where an infection didn't occur**********************
+  inf <- ddply(temp,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
+  inf$occurred[inf$occurred>0] <- 1
+  noInf <- inf$run[inf$occurred == 0]                         
+  temp <- temp[!temp$run %in% noInf,]
+  #*******************************************************************************
+  diss2 <- dissSummaryFunc(temp)
+  diss2$mainRun <- y
+  return(diss2)
+})
+
+sumAeg2 <- do.call(rbind.data.frame,sumAeg)
+
+write.csv(sumAeg2,"aegDissSummary.csv")
+
+
+
+#**************************albopictus******************************
+# read in model fits fits
+alb <- readRDS("albDissFits.rds")
+alb <- listToDat(output=alb,species="alb")
+alb$run <- 1:length(alb[,1])
+#********************************************
+
+start_time <- Sys.time()
+no_cores <- detectCores() - 1
+cl <- makeCluster(no_cores)
+
+albSims <- parRapply(cl,alb,function(y){
+  source("4_DISSmodelFunc.R")
+  source("3_INFfittingNLLParameterEstimates.R")
+  competenceDat <- read.csv("datCiotaOnyango.csv")
+  competenceDat <- competenceDat[competenceDat$Ref %in% "Onyango 2020",]
+  virus_params <- function( muV=albMuV
+                            ,infRate=albinfRate
+                            ,prodRate =   as.numeric(y[1])
+                            ,cellSpread = as.numeric(y[2])
+                            ,escapeRate = as.numeric(y[3])   
+                            ,cMax = 400            
+                            ,hMax = 900             
+  )
+    return(as.list(environment()))
+  
+  sim.res <- sim.func(x=10^round(competenceDat$Conc.Min[1],0),parms=virus_params())
+  
+  mainRun <- y[5]
+  return(cbind.data.frame(sim.res,mainRun))
   
 })
 
@@ -153,7 +207,24 @@ timeTaken <- end_time - start_time
 timeTaken
 
 albSimsdf <- do.call(rbind,albSims)
-albSimsdf$run <- as.factor(albSimsdf$run)
+albSimsdf$mainRun <- as.factor(albSimsdf$mainRun)
 
-saveRDS(albSimsdf,"albSims.rds")
+#*******summarise*******
+sumalb <- lapply(unique(albSimsdf$mainRun),function(y){
+  temp <- albSimsdf[albSimsdf$mainRun %in% y,]  
+  #**********first remove simulations where an infection didn't occur**********************
+  inf <- ddply(temp,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
+  inf$occurred[inf$occurred>0] <- 1
+  noInf <- inf$run[inf$occurred == 0]                         
+  temp <- temp[!temp$run %in% noInf,]
+  #*******************************************************************************
+  diss2 <- dissSummaryFunc(temp)
+  diss2$mainRun <- y
+  return(diss2)
+})
+
+sumalb2 <- do.call(rbind.data.frame,sumalb)
+
+write.csv(sumalb2,"albDissSummary.csv")
+
 

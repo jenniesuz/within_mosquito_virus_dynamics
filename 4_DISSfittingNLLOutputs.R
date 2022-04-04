@@ -117,7 +117,7 @@ ddply(params,.(species),summarise,meanCR=mean(escapeRate),sdCR=sd(escapeRate))
 
 
 #***************Simulations**********************
-aeg <- readRDS("aegSims.rds")
+aeg <- readRDS("aegDissSims.rds")
 names(aeg)[7] <- "subRun"
 
 sumAeg <- lapply(unique(aeg$run),function(y){

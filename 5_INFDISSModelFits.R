@@ -22,7 +22,7 @@ sims <- rbind.data.frame(aegInfSims,albInfSims)
 dat<- read.csv("datCiotaOnyango.csv")
 #****************************************************
 bin1 <- binom.confint(x=dat$NumInf,n=dat$ITotal,method="exact")
-bin2 <- binom.confint(x=dat$NumDiss,n=dat$DTotal,method="exact")
+bin2 <- binom.confint(x=dat$NumDiss,n=dat$NumInf,method="exact")
 dat$meanInf <- bin1$mean
 dat$lowerInf <- bin1$lower
 dat$upperInf <- bin1$upper
@@ -58,84 +58,33 @@ infFitsPlot <- ggplot(dat[dat$Ref %in% "Ciota 2017",]) +
 
 
 #***************Diss Simulations**********************
-aegDissSims <- readRDS("aegDissSims.rds")
-albDissSims <- readRDS("albDissSims.rds")
-
-names(aegDissSims)[7] <- "subRun"
-names(albDissSims)[7] <- "subRun"
-
-#**********first remove simulations where an infection didn't occur**********************
-inf <- ddply(aegDissSims,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
-inf$occurred[inf$occurred>0] <- 1
-noInf <- inf$run[inf$occurred == 0]                         # note run and concs where infection didn't occur
-
-aegDissSims <- aegDissSims[!aegDissSims$run %in% noInf,]
-#*******************************************************************************
-
-aegDissSims2 <- lapply(unique(aegDissSims$run),function(y){
-  temp <- aegDissSims[aegDissSims$run %in% y,]
-    diss <- dissSummaryFunc(temp)
-  diss$run <- y
-return(diss)
-})
-aegDissSims2 <- do.call(rbind.data.frame,aegDissSims2)
-
-write.csv(aegDissSims2,"aegDissSims.csv")
 
 
-aegDissSims <- read.csv("aegDissSims.csv")
-names(aegDissSims)[3] <- "DPIDissorTrans"
-names(aegDissSims)[2] <- "meanDiss"
+aegDissSims <- read.csv("aegDissSummary.csv")
+names(aegDissSims)[2] <- "DPIDissorTrans"
+names(aegDissSims)[3] <- "meanDiss"
 
-#********************
-#*#**********first remove simulations where an infection didn't occur**********************
-inf <- ddply(albDissSims,.(run,conc),summarise,occurred=sum(inf))  # establish if infection occurred
-inf$occurred[inf$occurred>0] <- 1
-inf$runConc <- paste(inf$run,inf$conc)
-noInf <- inf$runConc[inf$occurred == 0]                         # note run and concs where infection didn't occur
-
-albDissSims$runConc <- paste(albDissSims$run,albDissSims$conc)           # remove these from the dissemination dataset
-albDissSims <- albDissSims[!albDissSims$runConc %in% noInf,]
-#*******************************************************************************
-
-albDissSims2 <- lapply(unique(albDissSims$run),function(y){
-  temp <- albDissSims[albDissSims$run %in% y,]
-  diss <- dissSummaryFunc(temp)
-  diss$run <- y
-  return(diss)
-})
-albDissSims2 <- do.call(rbind.data.frame,albDissSims2)
-
-write.csv(albDissSims2,"albDissSims.csv")
+albDissSims <- read.csv("albDissSummary.csv")
+names(albDissSims)[2] <- "DPIDissorTrans"
+names(albDissSims)[3] <- "meanDiss"
 
 
-#**********
+aegDissSims$Moz <- ("Ae. aegypti")
+albDissSims$Moz <-  ("Ae. albopictus")
 
-alb <- read.csv("albDissSims.csv")
-aeg<- read.csv("aegDissSims.csv")
-
-alb$species <- ("Ae. albopictus")
-aeg$species <- ("Ae. aegypti")
-
-sims <- rbind.data.frame(alb,aeg) 
+sims <- rbind.data.frame(aegDissSims,albDissSims) 
 
 
-#****************************************************
-names(sims)[2] <- "DPIDissorTrans"
-names(sims)[3] <- "meanDiss"
-names(sims)[5] <- "Moz"
-
-
-dissFitsPlot <- ggplot(dat[dat$Ref %in% "Onyango 2002",]) +
-  geom_line(data=sims,aes(x=DPIDissorTrans,y=meanDiss,group=Moz,col=Moz),linetype=3,alpha=0.7) +
+dissFitsPlot <- ggplot(dat[dat$Ref %in% "Onyango 2020",]) +
+  geom_line(data=sims,aes(x=DPIDissorTrans,y=meanDiss,group=as.factor(mainRun),col=Moz),linetype=3,alpha=0.7) +
   geom_errorbar(aes(x=DPIDissorTrans,ymin=lowerDiss,ymax=upperDiss),alpha=0.5) +
    geom_point(aes(x=DPIDissorTrans,y=meanDiss,fill=factor(Moz)),shape=21) +
-  scale_colour_manual(values=c("royalblue4","dodgerblue")) +
+  #scale_colour_manual(values=c("royalblue4","dodgerblue")) +
   scale_fill_manual(values=c("royalblue4","dodgerblue")) +
   labs(fill="",title="B") +
    xlab("Days post blood meal") +
-  ylab("Proportion of mosquitoes with a disseminated infection") +
- #facet_wrap(~Moz,labeller=label_wrap_gen(width=8))+
+  ylab("Proportion of infected mosquitoes \n with a disseminated infection") +
+  facet_wrap(~Moz) +
   theme_set(theme_bw())  +    
   theme(panel.border = element_blank()                   
         ,axis.line = element_line(color = 'black')
@@ -146,8 +95,10 @@ dissFitsPlot <- ggplot(dat[dat$Ref %in% "Onyango 2002",]) +
         ,legend.background = element_blank()
         ,legend.text=element_text(size=6)
         ,strip.text=element_text(size=5)
-        ,legend.position=c(0.8,0.3)
-  )  
+        ,legend.position="none"
+        ,strip.background = element_rect(fill="white",color="white")
+  )  +
+  scale_colour_manual(values=c("royalblue4","dodgerblue"),name="Moz") 
 
 
 pdf(file="fig_midgutHemocoelModelFits.pdf",width=6,height=4)
