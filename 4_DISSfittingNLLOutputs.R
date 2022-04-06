@@ -96,11 +96,15 @@ erPlot <- ggplot(params,aes(x=escapeRate,fill=species)) +
         ,legend.key.size = unit(0.8,"line")
         ,legend.background = element_blank()
         ,legend.text=element_text(size=10)
+        ,legend.position=c(0.8,0.8)
   )
 
 pdf(file="fig_midgutParameterEstimates.pdf",width=5,height=3)
-grid.arrange(pRPlot,csPlot,erPlot,ncol=2)
+grid.arrange(muVPlot,betaPlot,pRPlot,csPlot,erPlot,ncol=3)
 dev.off()
+
+
+
 
 
 ddply(params,.(species),summarise,meanCR=mean(contactRate),sdCR=sd(contactRate))

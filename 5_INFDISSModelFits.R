@@ -68,23 +68,20 @@ albDissSims <- read.csv("albDissSummary.csv")
 names(albDissSims)[2] <- "DPIDissorTrans"
 names(albDissSims)[3] <- "meanDiss"
 
-
 aegDissSims$Moz <- ("Ae. aegypti")
 albDissSims$Moz <-  ("Ae. albopictus")
 
 sims <- rbind.data.frame(aegDissSims,albDissSims) 
 
-
 dissFitsPlot <- ggplot(dat[dat$Ref %in% "Onyango 2020",]) +
-  geom_line(data=sims,aes(x=DPIDissorTrans,y=meanDiss,group=as.factor(mainRun),col=Moz),linetype=3,alpha=0.7) +
+  geom_line(data=sims[sims$Moz %in% "Ae. aegypti",],aes(x=DPIDissorTrans,y=meanDiss,group=mainRun),linetype=3,alpha=0.7,col="royalblue4") +
+  geom_line(data=sims[sims$Moz %in% "Ae. albopictus",],aes(x=DPIDissorTrans,y=meanDiss,group=mainRun),linetype=3,alpha=0.7,col="dodgerblue") +
   geom_errorbar(aes(x=DPIDissorTrans,ymin=lowerDiss,ymax=upperDiss),alpha=0.5) +
    geom_point(aes(x=DPIDissorTrans,y=meanDiss,fill=factor(Moz)),shape=21) +
-  #scale_colour_manual(values=c("royalblue4","dodgerblue")) +
-  scale_fill_manual(values=c("royalblue4","dodgerblue")) +
+   scale_fill_manual(values=c("royalblue4","dodgerblue")) +
   labs(fill="",title="B") +
    xlab("Days post blood meal") +
   ylab("Proportion of infected mosquitoes \n with a disseminated infection") +
-  facet_wrap(~Moz) +
   theme_set(theme_bw())  +    
   theme(panel.border = element_blank()                   
         ,axis.line = element_line(color = 'black')
@@ -97,9 +94,8 @@ dissFitsPlot <- ggplot(dat[dat$Ref %in% "Onyango 2020",]) +
         ,strip.text=element_text(size=5)
         ,legend.position="none"
         ,strip.background = element_rect(fill="white",color="white")
-  )  +
-  scale_colour_manual(values=c("royalblue4","dodgerblue"),name="Moz") 
-
+  )  
+  
 
 pdf(file="fig_midgutHemocoelModelFits.pdf",width=6,height=4)
 grid.arrange(infFitsPlot,dissFitsPlot,ncol=2)

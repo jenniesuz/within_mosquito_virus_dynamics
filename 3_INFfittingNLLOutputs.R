@@ -44,6 +44,7 @@ muVPlot <- ggplot(dat,aes(x=muV,fill=species)) +
         ,legend.key.size = unit(0.8,"line")
         ,legend.background = element_blank()
         ,legend.text=element_text(size=10)
+        ,legend.position="none"
   )
 
 
@@ -63,6 +64,7 @@ betaPlot <- ggplot(dat,aes(x=infRate)) +
         ,legend.key.size = unit(0.8,"line")
         ,legend.background = element_blank()
         ,legend.text=element_text(size=10)
+        ,legend.position="none"
   )
 
 
