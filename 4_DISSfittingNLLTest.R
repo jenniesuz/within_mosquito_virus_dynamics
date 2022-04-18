@@ -22,9 +22,9 @@ competenceDat$upperDiss <- bin$upper
 #*************************************************************
 virus_params <- function(   muV=0.1
                             ,infRate=10^-7
-                            ,prodRate =   10 
-                            ,cellSpread = 10^-8
-                            ,escapeRate = 0.005
+                            ,prodRate =   50 
+                            ,cellSpread = 10^-3.5
+                            ,escapeRate = 0.0002
                             ,cMax = 400            
                             ,hMax = 900             
 )
