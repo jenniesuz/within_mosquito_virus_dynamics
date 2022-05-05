@@ -12,91 +12,91 @@ library(parallel)
 
 
 #********************run for limited values of beta**********************************
-beta <- c(-14,-12,-10,-8,-6,-4)
-run <- c(1:length(beta))
-randSnd <- cbind.data.frame(beta,run)
-#*******************************Run simulations in parallel****************************
-no_cores <- detectCores() - 1
-cl <- makeCluster(no_cores)
-#*************************************************************************************
-sensSims2 <- parRapply(cl,randSnd,function(y){
-
-  library(GillespieSSA)
-  library(plyr)
-  library(parallel)
-  virusConcs <- c(10^3,10^3.5,10^4,10^4.5,10^5,10^5.5,10^6,10^6.5,10^7,10^7.5,10^8,10^8.5,10^9,10^9.5,10^10)
-
-  params= c(muV = 0.02 # 2 days
-            ,infRate = 10^as.numeric(y[1])
-            ,prodRate =   20
-            ,cellSpread = 10^-4
-            ,escapeRate = 0.12
-            ,cMax = 400
-            ,hMax = 900
-  )
-#saveRDS(params,"params")
-
-  sim.func <- function(x,parms=params){
-    initial <- c(Gv=x*0.003,Mci=0,Mv=0,Hv=0,Hci=0) # initial state
-
-    finalTime <- 124
-
-    nsims <- 30
-
-    parameters <- parms#readRDS("params")
-
-    a <- c("muV*Gv"
-           ,"Gv*infRate*(cMax-Mci)"
-           ,"cellSpread*Mci*(cMax-Mci)"
-           ,"prodRate*Mci"
-           ,"muV*Mv"
-           ,"escapeRate*Mv"
-           ,"prodRate*Hci"
-           ,"muV*Hv"
-           ,"Hv*infRate*(hMax-Hci)"
-    ) # character vector of propensity functions
-
-    nu <- cbind(c(-1,0,0,0,0)
-                ,c(-1,+1,0,0,0)
-                ,c(0,+1,0,0,0)
-                ,c(0,0,+1,0,0)
-                ,c(0,0,-1,0,0)
-                ,c(0,0,-1,+1,0)
-                ,c(0,0,0,+1,0)
-                ,c(0,0,0,-1,0)
-                ,c(0,0,0,0,+1))
-
-    repSim <- lapply(1:nsims,function(z){
-      out <- ssa(initial,a,nu,parameters,tf=finalTime,method="ETL")
-
-      dat<-data.frame(out$dat)
-      dat$run <- z
-
-      dat$inf <- 0
-
-      if(dat$Mv[length(dat$Mv)]>0){dat$inf <- 1}
-      return(dat)
-    })
-
-    repSims <- do.call(rbind.data.frame,repSim)
-    repSims$conc <- x
-    repSims$MciProp <- repSims$Mci/parameters[6]
-    return(repSims)
-  }
-
-
-  doseSim <- mclapply(virusConcs, sim.func)
-  doseSim2 <- do.call(rbind.data.frame,doseSim)
-  run <- y[2]
-  return(cbind.data.frame(doseSim2,run))
-
-})
-
-stopCluster(cl)
-
-sensSims <- do.call(rbind.data.frame,sensSims2)
-names(sensSims)[7]<- "sampleNum"
-saveRDS(sensSims,"sensitivityInfBeta.rds")
+# beta <- c(-14,-12,-10,-8,-6,-4)
+# run <- c(1:length(beta))
+# randSnd <- cbind.data.frame(beta,run)
+# #*******************************Run simulations in parallel****************************
+# no_cores <- detectCores() - 1
+# cl <- makeCluster(no_cores)
+# #*************************************************************************************
+# sensSims2 <- parRapply(cl,randSnd,function(y){
+# 
+#   library(GillespieSSA)
+#   library(plyr)
+#   library(parallel)
+#   virusConcs <- c(10^3,10^3.5,10^4,10^4.5,10^5,10^5.5,10^6,10^6.5,10^7,10^7.5,10^8,10^8.5,10^9,10^9.5,10^10)
+# 
+#   params= c(muV = 0.02 # 2 days
+#             ,infRate = 10^as.numeric(y[1])
+#             ,prodRate =   20
+#             ,cellSpread = 10^-4
+#             ,escapeRate = 0.12
+#             ,cMax = 400
+#             ,hMax = 900
+#   )
+# #saveRDS(params,"params")
+# 
+#   sim.func <- function(x,parms=params){
+#     initial <- c(Gv=x*0.003,Mci=0,Mv=0,Hv=0,Hci=0) # initial state
+# 
+#     finalTime <- 124
+# 
+#     nsims <- 30
+# 
+#     parameters <- parms#readRDS("params")
+# 
+#     a <- c("muV*Gv"
+#            ,"Gv*infRate*(cMax-Mci)"
+#            ,"cellSpread*Mci*(cMax-Mci)"
+#            ,"prodRate*Mci"
+#            ,"muV*Mv"
+#            ,"escapeRate*Mv"
+#            ,"prodRate*Hci"
+#            ,"muV*Hv"
+#            ,"Hv*infRate*(hMax-Hci)"
+#     ) # character vector of propensity functions
+# 
+#     nu <- cbind(c(-1,0,0,0,0)
+#                 ,c(-1,+1,0,0,0)
+#                 ,c(0,+1,0,0,0)
+#                 ,c(0,0,+1,0,0)
+#                 ,c(0,0,-1,0,0)
+#                 ,c(0,0,-1,+1,0)
+#                 ,c(0,0,0,+1,0)
+#                 ,c(0,0,0,-1,0)
+#                 ,c(0,0,0,0,+1))
+# 
+#     repSim <- lapply(1:nsims,function(z){
+#       out <- ssa(initial,a,nu,parameters,tf=finalTime,method="ETL")
+# 
+#       dat<-data.frame(out$dat)
+#       dat$run <- z
+# 
+#       dat$inf <- 0
+# 
+#       if(dat$Mv[length(dat$Mv)]>0){dat$inf <- 1}
+#       return(dat)
+#     })
+# 
+#     repSims <- do.call(rbind.data.frame,repSim)
+#     repSims$conc <- x
+#     repSims$MciProp <- repSims$Mci/parameters[6]
+#     return(repSims)
+#   }
+# 
+# 
+#   doseSim <- mclapply(virusConcs, sim.func)
+#   doseSim2 <- do.call(rbind.data.frame,doseSim)
+#   run <- y[2]
+#   return(cbind.data.frame(doseSim2,run))
+# 
+# })
+# 
+# stopCluster(cl)
+# 
+# sensSims <- do.call(rbind.data.frame,sensSims2)
+# names(sensSims)[7]<- "sampleNum"
+# saveRDS(sensSims,"sensitivityInfBeta.rds")
 #***************************************************************
 
 
@@ -148,11 +148,6 @@ pInfBeta <- ggplot(infDat2) +
   )
 
 pInfBeta
-
-#pdf(file="fig_midgutPropInfBeta.pdf",width=5,height=5)
-#pInfBeta
-#dev.off()
-
 
 #********************************************************************************************
 #****************************Run for limited values of virus decay rate*******************************

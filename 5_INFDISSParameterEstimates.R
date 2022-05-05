@@ -75,8 +75,8 @@ library(ggfan)
 library(binom)
 
 # read in model fits fits
-albF <- readRDS("albDissFits.rds")
-aegF <- readRDS("aegDissFits.rds")
+albF <- readRDS("albDissFits220418.rds")
+aegF <- readRDS("aegDissFits220418.rds")
 
 
 # function to change to dataframe and then bind together

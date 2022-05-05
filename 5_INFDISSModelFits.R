@@ -39,7 +39,7 @@ infFitsPlot <- ggplot(dat[dat$Ref %in% "Ciota 2017",]) +
   xlab(expression(paste("Virus concentration (log"[10]," PFU/ml)"))) +
   labs(fill="",title="A") +
   scale_fill_manual(values=c("royalblue4","dodgerblue")) +
-  scale_colour_manual(values=c("royalblue4","dodgerblue")) +
+  scale_colour_manual(values=c("royalblue4","dodgerblue"),guide="none") +
   ylab("Proportion of mosquitoes with a midgut infection") +
   theme_set(theme_bw())  +    
   theme(panel.border = element_blank()                   
@@ -51,7 +51,7 @@ infFitsPlot <- ggplot(dat[dat$Ref %in% "Ciota 2017",]) +
         ,legend.background = element_blank()
         ,legend.text=element_text(size=6)
         ,strip.text=element_text(size=5)
-        ,legend.position="none"
+        ,legend.position=c(0.2,0.8)
   )   
 
 
@@ -60,11 +60,12 @@ infFitsPlot <- ggplot(dat[dat$Ref %in% "Ciota 2017",]) +
 #***************Diss Simulations**********************
 
 
-aegDissSims <- read.csv("aegDissSummary.csv")
+aegDissSims <- read.csv("aegDissSummary220418.csv")
 names(aegDissSims)[2] <- "DPIDissorTrans"
 names(aegDissSims)[3] <- "meanDiss"
 
-albDissSims <- read.csv("albDissSummary.csv")
+
+albDissSims <- read.csv("albDissSummary220418.csv")
 names(albDissSims)[2] <- "DPIDissorTrans"
 names(albDissSims)[3] <- "meanDiss"
 

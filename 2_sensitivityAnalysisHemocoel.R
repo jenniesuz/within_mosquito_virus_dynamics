@@ -113,6 +113,60 @@ doseSim <- mclapply(virusConcs, sim.func)
 doseSim2 <- do.call(rbind.data.frame,doseSim)
 doseSim2$virusConc <- log10(doseSim2$conc)
 
+
+
+#***********Plot change in numbers of virions in the midgut epi over time****
+test <- doseSim2
+
+mVPlot <- ggplot(test) +
+  geom_line(aes(x=t,y=Mv,group=run),col="grey",lwd=0.25) +
+  xlim(0,48) +
+  xlab("Time (hours)") +
+  ylab("Number of virions in the midgut epithelium (Mv)") +
+  facet_wrap(~virusConc,scales="free",labeller = label_bquote("Input number of virions (Gv):"~.(10^virusConc*0.003))) +
+  theme_set(theme_bw())  +
+  theme(panel.border = element_blank()
+        ,strip.background = element_rect(colour="white", fill="white")
+        ,strip.text = element_text(size = 6)
+        ,axis.line = element_line(color = 'black')
+        ,text=element_text(size=6)
+        ,plot.margin=unit(c(0.2,0.3,0.1,0.1), "cm")
+        ,axis.text=element_text(size=6)
+        ,legend.key.size = unit(0.8,"line")
+        ,legend.background = element_blank()
+        ,legend.text=element_text(size=6)
+        ,legend.position ="none"
+        # ,legend.title = element_blank()
+  )
+
+hVPlot <- ggplot(test) +
+  geom_line(aes(x=t,y=Hv,group=run),col="grey",lwd=0.25) +
+  xlab("Time (hours)") +
+  ylab("Number of virions in the hemocoel (Hv)") +
+  facet_wrap(~virusConc,scales="free",labeller = label_bquote("Input number of virions (Gv):"~.(10^virusConc*0.003))) +
+  theme_set(theme_bw())  +
+  theme(panel.border = element_blank()
+        ,strip.background = element_rect(colour="white", fill="white")
+        ,strip.text = element_text(size = 6)
+        ,axis.line = element_line(color = 'black')
+        ,text=element_text(size=6)
+        ,plot.margin=unit(c(0.2,0.3,0.1,0.1), "cm")
+        ,axis.text=element_text(size=6)
+        ,legend.key.size = unit(0.8,"line")
+        ,legend.background = element_blank()
+        ,legend.text=element_text(size=6)
+        ,legend.position ="none"
+        # ,legend.title = element_blank()
+  )
+
+
+pdf(file="fig_stochVarSimsConc.pdf",width=4,height=8)
+grid.arrange(mVPlot,hVPlot)
+dev.off()
+
+#**************************************
+
+
 #**********first remove simulations where an infection didn't occur**********************
 inf <- ddply(doseSim2,.(run,conc),summarise,occurred=sum(inf))  # establish if infection occurred
 inf$occurred[inf$occurred>0] <- 1
