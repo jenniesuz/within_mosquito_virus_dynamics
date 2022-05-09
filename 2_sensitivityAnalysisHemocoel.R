@@ -108,22 +108,64 @@ sim.func <- function(x){
 
 }
 
+set.seed(123)
+
 doseSim <- mclapply(virusConcs, sim.func)
 
 doseSim2 <- do.call(rbind.data.frame,doseSim)
 doseSim2$virusConc <- log10(doseSim2$conc)
 
+#***********Change in numbers of virions in the midgut epi over time****
+test <- doseSim2
+
+# calculate time to midgut infection
+
+timeToMG <- lapply(unique(test$conc),function(x){
+  temp <- test[test$conc %in% x,]
+  minTRuns <- lapply(unique(test$run),function(y){
+    temp2 <- temp[temp$run %in% y,]
+    temp2 <- temp2[!temp2$Mci %in% 0,]
+    if(length(temp2$Mci)>0){
+    minT <- temp2$t[min(temp2$Mci)]
+    }else{
+      minT<- NA
+    }
+    return(cbind(minT,run=y))
+  })
+  minTRuns <- do.call(rbind.data.frame,minTRuns)
+  minTRuns$conc <- x
+  return(minTRuns)
+})
+
+timeToMG <- do.call(rbind.data.frame,timeToMG)
+timeToMG
+
+ddply(timeToMG,.(conc),summarise,minI=min(minT,na.rm=T),maxI=max(minT,na.rm=T))
+
+#********range in number of virions in the midgut across simulations
+testSub <- test[test$conc %in% 1e+07,]
+
+# 24hrs
+testSub2 <- testSub[(testSub$t >24 )& (testSub$t<=25),]
+byRun <- ddply(testSub2,.(run),summarise,max=max(Mv,na.rm=T))
+range(byRun$max)
+
+# 72hrs
+testSub2 <- testSub[(testSub$t >72 )& (testSub$t<=73),]
+byRun <- ddply(testSub2,.(run),summarise,max=max(Mv,na.rm=T))
+range(byRun$max)
+
 
 
 #***********Plot change in numbers of virions in the midgut epi over time****
-test <- doseSim2
 
 mVPlot <- ggplot(test) +
   geom_line(aes(x=t,y=Mv,group=run),col="grey",lwd=0.25) +
   xlim(0,48) +
+  labs(title="A") +
   xlab("Time (hours)") +
   ylab("Number of virions in the midgut epithelium (Mv)") +
-  facet_wrap(~virusConc,scales="free",labeller = label_bquote("Input number of virions (Gv):"~.(10^virusConc*0.003))) +
+  facet_wrap(~virusConc,scales="free",labeller = label_bquote("Number of input virions (Gv):"~.(10^virusConc*0.003))) +
   theme_set(theme_bw())  +
   theme(panel.border = element_blank()
         ,strip.background = element_rect(colour="white", fill="white")
@@ -142,6 +184,7 @@ mVPlot <- ggplot(test) +
 hVPlot <- ggplot(test) +
   geom_line(aes(x=t,y=Hv,group=run),col="grey",lwd=0.25) +
   xlab("Time (hours)") +
+  labs(title="B") +
   ylab("Number of virions in the hemocoel (Hv)") +
   facet_wrap(~virusConc,scales="free",labeller = label_bquote("Input number of virions (Gv):"~.(10^virusConc*0.003))) +
   theme_set(theme_bw())  +
@@ -205,7 +248,7 @@ propDiss <- ggplot(diss2) +
         ,legend.key.size = unit(0.8,"line")
         ,legend.background = element_blank()
         ,legend.text=element_text(size=8)
-        ,legend.position =c(0.8,0.6)
+        ,legend.position =c(0.8,0.5)
   ) 
 
 propDiss

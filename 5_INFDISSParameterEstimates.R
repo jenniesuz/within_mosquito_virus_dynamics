@@ -15,10 +15,15 @@ aegInf <- cbind.data.frame(muV=aegInfParams[1,]        # convert from list to da
                            ,probInf=aegInfParams[2,]
                            ,species="Ae. aegypti"
 )
+# median estimate of beta for aegypti
+log10(median(aegInf$probInf))
+
 albInf <- cbind.data.frame(muV=albInfParams[1,]
                            ,probInf=albInfParams[2,]
                            ,species="Ae. albopictus"
 )
+# median estimate of beta for albopictus
+log10(median(albInf$probInf))
 
 datInf <- rbind.data.frame(aegInf,albInf)
 
@@ -30,7 +35,7 @@ muVPlot <- ggplot(datInf,aes(x=muV,fill=species)) +
   scale_x_log10() +
   xlab(expression(paste("Virus decay rate (",italic(mu)["V"],")"))) +
   ylab("Number of fits") +
-  labs(fill="") +
+  labs(fill="",title="A") +
   ylab("Number of fits") +
   theme_bw() +
   theme(panel.border = element_blank()
@@ -51,7 +56,7 @@ betaPlot <- ggplot(datInf,aes(x=probInf,fill=species)) +
   scale_x_log10() +
   xlab(expression(paste("Rate at which virions infect susceptible cells (log"[10]*italic(beta),")"))) +
   ylab("") +
-  labs(fill="") +
+  labs(fill="",title="B") +
   theme_bw() +
   theme(panel.border = element_blank()
         ,axis.line = element_line(color = 'black')
@@ -101,7 +106,12 @@ listToDat <- function(output=alb, species="alb"){
 }
 
 albDiss <- listToDat(albF)
+# median escae rate for albo
+log10(median(albDiss$escapeRate))
+
 aegDiss <- listToDat(output=aegF,species="aeg")
+# median escape rate for aeg
+log10(median(aegDiss$escapeRate))
 
 datDiss <- rbind.data.frame(albDiss,aegDiss)
 
@@ -115,7 +125,7 @@ pRPlot <- ggplot(datDiss,aes(x=prodRate,fill=species)) +
   scale_x_log10() +
   xlab(expression(paste("Infected cell virus production rate (",italic(gamma),")"))) +
   ylab("Number of fits") +
-  labs(fill="") +
+  labs(fill="",title="C") +
   ylab("Number of fits") +
   theme_bw() +
   theme(panel.border = element_blank()
@@ -135,7 +145,7 @@ csPlot <- ggplot(datDiss,aes(x=cellSpread,fill=species)) +
   scale_x_log10() +
   xlab(expression(paste("Rate virions spread between midgut cells (",italic(alpha),")"))) +
   ylab("") +
-  labs(fill="") +
+  labs(fill="",title="D") +
   theme_bw() +
   theme(panel.border = element_blank()
         ,axis.line = element_line(color = 'black')
@@ -154,7 +164,7 @@ erPlot <- ggplot(datDiss,aes(x=escapeRate,fill=species)) +
   scale_x_log10() +
   xlab(expression(paste("Rate of virion escape into the hemocoel (",italic(rho),")"))) +
   ylab("Number of fits") +
-  labs(fill="") +
+  labs(fill="",title="E") +
   theme_bw() +
   theme(panel.border = element_blank()
         ,axis.line = element_line(color = 'black')
