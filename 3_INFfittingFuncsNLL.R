@@ -19,7 +19,7 @@ subsParms <- function(fit.params, fixed.params=virus_params())
 
 ## Make likelihood a function of fixed and fitted parameters.
 objFXN <- function(fit.params                                                          ## paramters to fit
-                   , fixed.params =virus_params()                                     ## fixed paramters
+                   , fixed.params =virus_params()                                      ## fixed paramters
                    , dat=temps.count) {
   parms <- subsParms(fit.params, fixed.params)
   nll.binom(parms, dat = dat)                                                           ## then call likelihood function

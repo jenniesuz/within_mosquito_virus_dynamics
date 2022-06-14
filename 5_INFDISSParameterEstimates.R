@@ -17,6 +17,8 @@ aegInf <- cbind.data.frame(muV=aegInfParams[1,]        # convert from list to da
 )
 # median estimate of beta for aegypti
 log10(median(aegInf$probInf))
+log10(range(aegInf$probInf))
+
 
 albInf <- cbind.data.frame(muV=albInfParams[1,]
                            ,probInf=albInfParams[2,]

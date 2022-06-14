@@ -32,7 +32,7 @@ dat$upperDiss <- bin2$upper
 #***************************************************
 #*
 infFitsPlot <- ggplot(dat[dat$Ref %in% "Ciota 2017",]) +
-  geom_line(data=sims,aes(x=log10(Conc.Min),y=meanInf,col=Moz,group=parmsComb),linetype=3,alpha=0.8) +
+ # geom_line(data=sims,aes(x=log10(Conc.Min),y=meanInf,col=Moz,group=parmsComb),linetype=3,alpha=0.8) +
   geom_errorbar(aes(x=Conc.Min,ymin=lowerInf,ymax=upperInf),alpha=0.5) +
   geom_point(aes(x=Conc.Min,y=meanInf,fill=Moz),shape=21)+
   # geom_point(data=sims,aes(x=log10(Conc.Min),y=meanInf,col=Moz),size=2)  +
@@ -75,8 +75,8 @@ albDissSims$Moz <-  ("Ae. albopictus")
 sims <- rbind.data.frame(aegDissSims,albDissSims) 
 
 dissFitsPlot <- ggplot(dat[dat$Ref %in% "Onyango 2020",]) +
-  geom_line(data=sims[sims$Moz %in% "Ae. aegypti",],aes(x=DPIDissorTrans,y=meanDiss,group=mainRun),linetype=3,alpha=0.7,col="royalblue4") +
-  geom_line(data=sims[sims$Moz %in% "Ae. albopictus",],aes(x=DPIDissorTrans,y=meanDiss,group=mainRun),linetype=3,alpha=0.7,col="dodgerblue") +
+ # geom_line(data=sims[sims$Moz %in% "Ae. aegypti",],aes(x=DPIDissorTrans,y=meanDiss,group=mainRun),linetype=3,alpha=0.7,col="royalblue4") +
+ # geom_line(data=sims[sims$Moz %in% "Ae. albopictus",],aes(x=DPIDissorTrans,y=meanDiss,group=mainRun),linetype=3,alpha=0.7,col="dodgerblue") +
   geom_errorbar(aes(x=DPIDissorTrans,ymin=lowerDiss,ymax=upperDiss),alpha=0.5) +
    geom_point(aes(x=DPIDissorTrans,y=meanDiss,fill=factor(Moz)),shape=21) +
    scale_fill_manual(values=c("royalblue4","dodgerblue")) +
@@ -98,6 +98,6 @@ dissFitsPlot <- ggplot(dat[dat$Ref %in% "Onyango 2020",]) +
   )  
   
 
-pdf(file="fig_midgutHemocoelModelFits.pdf",width=6,height=4)
+pdf(file="fig_midgutHemocoelModelFits2.pdf",width=6,height=4)
 grid.arrange(infFitsPlot,dissFitsPlot,ncol=2)
 dev.off()

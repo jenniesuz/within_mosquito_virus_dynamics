@@ -55,12 +55,20 @@ fitToDataFunc <- function(x
 }
 #********************************************************************************
 
+
+bothInffits <- mclapply(1,fitToDataFunc,dataSet=competenceDat,infRate=10^-8.5)
+
   
 aegInffits <- mclapply(1:100,fitToDataFunc,dataSet=competenceDat[(competenceDat$Moz %in% "Ae. aegypti"),])
 albInffits <- mclapply(1:100,fitToDataFunc,dataSet=competenceDat[(competenceDat$Moz %in% "Ae. albopictus"),],infRate=10^-7.5)
 
 saveRDS(aegInffits,"aegInffits.rds")
 saveRDS(albInffits,"albInffits.rds")
+
+
+
+
+
 
 
 
