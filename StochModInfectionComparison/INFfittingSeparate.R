@@ -56,7 +56,7 @@ start <- Sys.time()
   end-start
   # save fitted parameters
   #AIC
-  -2*(-optim.vals$value) + 2*3  # 2939
+  -2*(-optim.vals$value) + 2*3  
   
   saveRDS(optim.vals,"INFModelFitSepParms220616.rds")
   
