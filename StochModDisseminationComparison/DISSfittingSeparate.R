@@ -13,7 +13,7 @@ source(here("StochModInfectionComparison//INFfittingFuncsNLL.R"))
 
 #******************data to fit to********************
 competenceDat <- read.csv(here(".//Data//datCiotaOnyango.csv"))
-competenceDat <- competenceDat[competenceDat$Ref %in% "Ciota 2017",]
+competenceDat <- competenceDat[competenceDat$Ref %in% "Onyango 2020",]
 bin <- binom.confint(x=competenceDat$NumInf,n=competenceDat$ITotal,method="exact")
 competenceDat$meanInf <- bin$mean
 competenceDat$lowerInf <- bin$lower

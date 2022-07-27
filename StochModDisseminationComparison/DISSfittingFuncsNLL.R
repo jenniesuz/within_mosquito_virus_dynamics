@@ -38,6 +38,7 @@ virus_params <- function(   muV = 0.1
                             ,escapeRate1 = 0.05
                             ,escapeRate2 = 0.05
                             ,cMax = 400  
+                            ,hMax= 900
 )
   return(as.list(environment()))
 #*****************************************************************************
@@ -51,21 +52,30 @@ repeatModelRunFunc <- function(x
                                ,p4=parms$cellSpread1
                                ,p5=parms$escapeRate1
                                ,p6=parms$cMax
+                               ,p7=parms$hMax
                                ){
   a<-x
-  doseSim <- lapply(10^conc, sim.func
+  sim <- sim.func(10^conc[1]
                     ,muV=p1
                     ,infRate=p2
                     ,prodRate=p3
                     ,cellSpread=p4
                     ,escapeRate=p5
-                    ,cMax=p6)
-  doseSim2 <- do.call(rbind.data.frame,doseSim)
-  infDat <- ddply(doseSim2,.(conc,run),summarise,sumRuns=sum(inf))
-  infDat$inf <- 0
-  infDat$inf[infDat$sumRuns>0] <- 1
-  infDat$run2 <- x
-  return(infDat)
+                    ,cMax=p6
+                    ,hMax=p7)
+
+  #**********first remove simulations where an infection didn't occur**********************
+  inf <- ddply(sim,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
+  inf$occurred[inf$occurred>0] <- 1
+  noInf <- inf$run[inf$occurred == 0]                         # note run and concs where infection didn't occur
+  # remove these from the dissemination dataset
+  sim <- sim[!sim$run %in% noInf,]
+  #*******************************************************************************
+  tempDiss <- dissSummaryFunc(sim)
+
+  subSim <- tempDiss[tempDiss$time %in% as.numeric(dat$DPIDissorTrans),]
+  subSim$run2 <- x
+  return(sumSim)
 }
 #********************************************************************************
 
@@ -86,22 +96,25 @@ nll.binom <- function(parms=virus_params(),dat=competenceDat){
   }else{                                                      
  
      # aeg
-    doseSim <- mclapply(1:30,repeatModelRunFunc    # 30 simulations to find average given set of parameter values
+     sim <- mclapply(1:30,repeatModelRunFunc    # 30 simulations to find average given set of parameter values
                            ,p2=parms$infRate1
                            ,conc=dat$Conc.Min[dat$Moz %in% "Ae. aegypti"]
                         ,p1=parms$muV
                         ,p3=parms$prodRate1
                         ,p4=parms$cellSpread1
                         ,p5=parms$escapeRate1
-                        ,p6=parms$cMax)
+                        ,p6=parms$cMax
+                        ,p7=parms$hMAx)
    
-    doseSim2 <- do.call(rbind.data.frame,doseSim)
-    doseSim3 <- ddply(doseSim2,.(run2,conc),summarise,sumInf=sum(inf))
-    meanInf <- ddply(doseSim3,.(conc),summarise,meanInf=mean(sumInf))
-    infDatAeg <- meanInf$meanInf/length(unique(doseSim2$run))
+     
+
+    sim2 <- do.call(rbind.data.frame,sim)
+    sim3 <- ddply(sim2,.(run2,conc),summarise,sumInf=sum(inf))
+    meanInf <- ddply(sim3,.(conc),summarise,meanInf=mean(sumInf))
+    dissDatAeg <- meanInf$meanInf/length(unique(sim2$run))
     
     #alb
-    doseSim <- mclapply(1:30,repeatModelRunFunc    # 30 simulations to find average given set of parameter values
+    sim <- mclapply(1:30,repeatModelRunFunc    # 30 simulations to find average given set of parameter values
                         ,p2=parms$infRate1
                         ,conc=dat$Conc.Min[dat$Moz %in% "Ae. albopictus"]
                         ,p1=parms$muV
@@ -123,11 +136,16 @@ nll.binom <- function(parms=virus_params(),dat=competenceDat){
     samplesAlb <- samples[samples$Moz %in% "Ae. albopictus",]
     samples <- rbind.data.frame(samplesAeg,samplesAlb)
     
-    infDat[infDat %in% 0]<- 0.000000000001
-    infDat[infDat%in% 1]<- 0.999999999999
-    dbinoms <- dbinom(samples$Denom-samples$NumInf,samples$Denom,prob=1-infDat,log=T)
     
-    ll <- sum(dbinoms)  # log likelihood assuming data are Poisson distributed
+    subSim$proportionDisseminated[subSim$proportionDisseminated %in% 0]<- 0.000000000001
+    subSim$proportionDisseminated[subSim$proportionDisseminated %in% 1]<- 0.999999999999
+    dbinoms <- dbinom(dat$NumInf-dat$NumDiss,dat$NumInf,prob=1-subSim$proportionDisseminated,log=T)
+    
+   # infDat[infDat %in% 0]<- 0.000000000001
+   #  infDat[infDat%in% 1]<- 0.999999999999
+   # dbinoms <- dbinom(samples$Denom-samples$NumInf,samples$Denom,prob=1-infDat,log=T)
+    
+    ll <- sum(dbinoms)
   }
 
 return(-ll)
