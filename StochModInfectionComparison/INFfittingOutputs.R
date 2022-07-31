@@ -7,11 +7,11 @@ library(ggplot2)
 source(here(".//StochModInfectionComparison//INFmodelFunc.R"))
 
 
-output <- readRDS(here("rdsOutputs//INFModelFitSepParms220616.rds"))
+output <- readRDS(here("rdsOutputs//INFModelFitSepParms220713.rds"))
 # estimates
 infParms <- exp(output[[1]])
 
--2*(-output$value) + 2*3  # 1904.5
+-2*(-output$value) + 2*3  # 60.951
 
 
 
@@ -19,7 +19,7 @@ infParms <- exp(output[[1]])
 
 #***************************************
 #******************data to fit to********************
-dat<- read.csv(here("Data\\datCiotaOnyango.csv"))
+dat <- read.csv(here("Data\\datCiotaOnyango.csv"))
 #****************************************************
 bin1 <- binom.confint(x=dat$NumInf,n=dat$ITotal,method="exact")
 bin2 <- binom.confint(x=dat$NumDiss,n=dat$NumInf,method="exact")

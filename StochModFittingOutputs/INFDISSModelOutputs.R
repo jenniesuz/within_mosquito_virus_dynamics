@@ -1,7 +1,6 @@
 library(gridExtra)
 library(ggplot2)
 library(binom)
-library(viridis)
 
 aegInf <- readRDS("aegInffits.rds") 
 albInf <- readRDS("albInffits.rds")

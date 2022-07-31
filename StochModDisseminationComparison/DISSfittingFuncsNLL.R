@@ -26,17 +26,18 @@ objFXN <- function(fit.params                                                   
 #***************************************************************************************
 
 
+#log_muV 1.544027e-01 log_infRate1  2.338052e-09 log_infRate2  5.494484e-08 
 
 #************************parameters for two 'treatments'****************************
-virus_params <- function(   muV = 0.1
-                            ,infRate1 = 10^-7.5
-                            ,infRate2 = 10^-7.5
-                            ,prodRate1 =   1    
-                            ,prodRate2 = 1
-                            ,cellSpread1 = 10^-4  
-                            ,cellSpread2 = 10^-4
-                            ,escapeRate1 = 0.05
-                            ,escapeRate2 = 0.05
+virus_params <- function(   muV = 1.544027e-01
+                            ,infRate1 = 2.338052e-09
+                            ,infRate2 = 5.494484e-08 
+                            ,prodRate1 =  50   
+                            ,prodRate2 = 10
+                            ,cellSpread1 = 10^-3.5 
+                            ,cellSpread2 = 10^-6
+                            ,escapeRate1 = 0.09
+                            ,escapeRate2 = 0.005
                             ,cMax = 400  
                             ,hMax= 900
 )
@@ -45,6 +46,7 @@ virus_params <- function(   muV = 0.1
 
 #**************************Function to wrap fitting and simulations for iteration*************
 repeatModelRunFunc <- function(x
+                               ,dpid=dat$DPIDissorTrans
                                ,conc=dat$Conc.Min
                                ,p1=parms$muV
                                ,p2=parms$infRate1
@@ -55,7 +57,7 @@ repeatModelRunFunc <- function(x
                                ,p7=parms$hMax
                                ){
   a<-x
-  sim <- sim.func(10^conc[1]
+  sim <- sim.func(x=10^conc[1]
                     ,muV=p1
                     ,infRate=p2
                     ,prodRate=p3
@@ -73,9 +75,9 @@ repeatModelRunFunc <- function(x
   #*******************************************************************************
   tempDiss <- dissSummaryFunc(sim)
 
-  subSim <- tempDiss[tempDiss$time %in% as.numeric(dat$DPIDissorTrans),]
+  subSim <- tempDiss[tempDiss$time %in% as.numeric(dpid),]
   subSim$run2 <- x
-  return(sumSim)
+  return(subSim)
 }
 #********************************************************************************
 
@@ -98,52 +100,48 @@ nll.binom <- function(parms=virus_params(),dat=competenceDat){
      # aeg
      sim <- mclapply(1:30,repeatModelRunFunc    # 30 simulations to find average given set of parameter values
                            ,p2=parms$infRate1
+                           ,dpid=dat$DPIDissorTrans[dat$Moz %in% "Ae. aegypti"]
                            ,conc=dat$Conc.Min[dat$Moz %in% "Ae. aegypti"]
                         ,p1=parms$muV
                         ,p3=parms$prodRate1
                         ,p4=parms$cellSpread1
                         ,p5=parms$escapeRate1
                         ,p6=parms$cMax
-                        ,p7=parms$hMAx)
+                        ,p7=parms$hMax)
    
      
 
     sim2 <- do.call(rbind.data.frame,sim)
-    sim3 <- ddply(sim2,.(run2,conc),summarise,sumInf=sum(inf))
-    meanInf <- ddply(sim3,.(conc),summarise,meanInf=mean(sumInf))
-    dissDatAeg <- meanInf$meanInf/length(unique(sim2$run))
+    sim3 <- ddply(sim2,.(run2,time),summarise,meanDiss=mean(HciInf),propDiss=mean(HciInf)/SampleSize)
+    aegSim <- sim3
     
     #alb
     sim <- mclapply(1:30,repeatModelRunFunc    # 30 simulations to find average given set of parameter values
-                        ,p2=parms$infRate1
-                        ,conc=dat$Conc.Min[dat$Moz %in% "Ae. albopictus"]
-                        ,p1=parms$muV
-                        ,p3=parms$prodRate1
-                        ,p4=parms$cellSpread1
-                        ,p5=parms$escapeRate1
-                        ,p6=parms$cMax)
-    
-    doseSim2 <- do.call(rbind.data.frame,doseSim)
-    doseSim3 <- ddply(doseSim2,.(run2,conc),summarise,sumInf=sum(inf))
-    meanInf <- ddply(doseSim3,.(conc),summarise,meanInf=mean(sumInf))
-    infDatAlb <- meanInf$meanInf/length(unique(doseSim2$run))
-    
-    infDat <- c(infDatAeg,infDatAlb)
-    
-    #*data*
-    samples <- ddply(dat,.(Moz,Conc.Min),summarise, NumInf=sum(NumInf),Denom=sum(ITotal))
-    samplesAeg <- samples[samples$Moz %in% "Ae. aegypti",]
-    samplesAlb <- samples[samples$Moz %in% "Ae. albopictus",]
-    samples <- rbind.data.frame(samplesAeg,samplesAlb)
+                    ,p2=parms$infRate2
+                    ,dpid=dat$DPIDissorTrans[dat$Moz %in% "Ae. albopictus"]
+                    ,conc=dat$Conc.Min[dat$Moz %in% "Ae. albopictus"]
+                    ,p1=parms$muV
+                    ,p3=parms$prodRate2
+                    ,p4=parms$cellSpread2
+                    ,p5=parms$escapeRate2
+                    ,p6=parms$cMax
+                    ,p7=parms$hMax)
     
     
-    subSim$proportionDisseminated[subSim$proportionDisseminated %in% 0]<- 0.000000000001
-    subSim$proportionDisseminated[subSim$proportionDisseminated %in% 1]<- 0.999999999999
-    dbinoms <- dbinom(dat$NumInf-dat$NumDiss,dat$NumInf,prob=1-subSim$proportionDisseminated,log=T)
     
-   # infDat[infDat %in% 0]<- 0.000000000001
-   #  infDat[infDat%in% 1]<- 0.999999999999
-   # dbinoms <- dbinom(samples$Denom-samples$NumInf,samples$Denom,prob=1-infDat,log=T)
+    sim2 <- do.call(rbind.data.frame,sim)
+    sim3 <- ddply(sim2,.(run2,time),summarise,meanDiss=mean(HciInf),propDiss=mean(HciInf)/SampleSize)
+    albSim <- sim3
+    
+    aegSim$Moz <- "Ae. aegypti"
+    albSim$Moz <- "Ae. albopictus"
+    sims <- rbind.data.frame(aegSim,albSim)
+    
+    dat <- rbind.data.frame(dat[dat$Moz %in% "Ae. aegypti",],dat[dat$Moz %in% "Ae. albopictus",])
+    
+    sims$propDiss[sims$propDiss %in% 0]<- 0.000000000001
+    sims$propDiss[sims$propDiss %in% 1]<- 0.999999999999
+    dbinoms <- dbinom(dat$NumInf-dat$NumDiss,dat$NumInf,prob=1-sims$propDiss,log=T)
     
     ll <- sum(dbinoms)
   }

@@ -7,9 +7,9 @@ library(parallel)
 library(plyr)
 library(here)
 #****model code****
-source(here("StochModInfectionComparison//INFmodelFunc.R"))
+source(here("StochModDisseminationComparison//DISSmodelFunc.R"))
 #***likelihood****
-source(here("StochModInfectionComparison//INFfittingFuncsNLL.R"))
+source(here("StochModDisseminationComparison//DISSfittingFuncsNLL.R"))
 
 #******************data to fit to********************
 competenceDat <- read.csv(here(".//Data//datCiotaOnyango.csv"))
@@ -21,26 +21,20 @@ competenceDat$upperInf <- bin$upper
 #****************************************************
 
 
-#************************parameters for two 'treatments'****************************
-virus_params <- function(   muV = 0.1
-                            ,infRate1 = 10^-7.5
-                            ,infRate2 = 10^-7.5
-                            ,prodRate1 = 1              # note these parameters don't matter for infection
-                            ,prodRate2 = 1              # but will be used in the dissemination model
-                            ,cellSpread1 = 10^-4        #
-                            ,cellSpread2 = 10^-4        #
-                            ,escapeRate1 = 0.05         #
-                            ,escapeRate2 = 0.05         #
-                            ,cMax = 400                 #
-)
-  return(as.list(environment()))
-#*****************************************************************************
+#****allowing all parameters to vary****
 start <- Sys.time()
   trace<-3
+  
+#log_muV 1.544027e-01 log_infRate1  2.338052e-09 log_infRate2  5.494484e-08  
+
   #********initial parameter values****
   init.pars.fit <- c(
-    log_muV=log(0.1)
-    ,log_infRate1=log(10^-7.5)
+    log_prodRate1=log(50)
+    ,log_prodRate2=log(10)
+    ,log_cellSpread1=log(10^-3.5)
+    ,log_cellSpread2=log(10^-6)
+    ,log_escapeRate1=log(0.09)
+    ,log_escapeRate2=log(0.005)
   )
   #********optimise*******
   optim.vals <- optim(par = init.pars.fit
@@ -57,7 +51,7 @@ start <- Sys.time()
   #AIC
   -2*(-optim.vals$value) + 2*2
   
-  saveRDS(optim.vals,"INFModelFitSameParms220714.rds")
+  saveRDS(optim.vals,"DissModelFitSepAllParms220728.rds")
   
   
   #test <- readRDS("INFModelFitSepParms220713.rds")
