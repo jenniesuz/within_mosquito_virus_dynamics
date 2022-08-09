@@ -32,10 +32,9 @@ start <- Sys.time()
     log_prodRate1=log(50)
     ,log_prodRate2=log(10)
     ,log_cellSpread1=log(10^-3.5)
-    ,log_cellSpread2=log(10^-6)
-    ,log_escapeRate1=log(0.09)
-    ,log_escapeRate2=log(0.005)
-  )
+    ,log_cellSpread2=log(10^-3.5)
+    ,log_escapeRate1=log(0.05)
+    ,log_escapeRate2=log(0.0001))  
   #********optimise*******
   optim.vals <- optim(par = init.pars.fit
                       , objFXN

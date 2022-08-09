@@ -6,6 +6,12 @@ library(ggplot2)
 
 source(here(".//StochModInfectionComparison//INFmodelFunc.R"))
 
+output <- readRDS(here("rdsOutputs//INFModelFitSameParms220714.rds"))
+# estimates
+infParms <- exp(output[[1]])
+
+-2*(-output$value) + 2*2  # 123.55
+
 
 output <- readRDS(here("rdsOutputs//INFModelFitSepParms220713.rds"))
 # estimates
