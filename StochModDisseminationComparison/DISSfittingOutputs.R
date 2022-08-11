@@ -208,9 +208,9 @@ ggplot(competenceDat) +
 
 
 #*************all params**************
-output <- readRDS(here("rdsOutputs//DissModelFitSepAllParms220728.rds"))
+output <- readRDS(here("rdsOutputs//DissModelFitSepAllParms220804.rds"))
 
--2*(-output$value) + 2*6  # 2378
+-2*(-output$value) + 2*6  # 1062
 # estimates
 MLEfits <- output[[1]]
 prodRate1 <- exp(MLEfits)[1]
