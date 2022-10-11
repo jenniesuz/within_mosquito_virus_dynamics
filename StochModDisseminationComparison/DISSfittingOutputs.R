@@ -15,8 +15,8 @@ MLEfits <- output[[1]]
 round(exp(MLEfits),6)
 #CIs
 fisherInfMatrix <- solve(-output$hessian) ## invert the Hessian, to estimate the covar-var matrix of parameter estimates
-exp(MLEfits + 1.96*sqrt(diag(fisherInfMatrix)))
-exp(MLEfits - 1.96*sqrt(diag(fisherInfMatrix)))
+round(exp(MLEfits + 1.96*sqrt(diag(fisherInfMatrix))),6)
+round(exp(MLEfits - 1.96*sqrt(diag(fisherInfMatrix))),6)
 
 
 
@@ -122,7 +122,7 @@ output <- readRDS(here("rdsOutputs//DissModelFitSepAllParms220804.rds"))
 
 -2*(-output$value) + 2*6  # 1062
 MLEfits <- output[[1]]
-exp(MLEfits)
+round(exp(MLEfits),6)
 fisherInfMatrix <- solve(-output$hessian) ## invert the Hessian, to estimate the covar-var matrix of parameter estimates
 exp(MLEfits + 1.96*sqrt(diag(fisherInfMatrix)))
 exp(MLEfits - 1.96*sqrt(diag(fisherInfMatrix)))
