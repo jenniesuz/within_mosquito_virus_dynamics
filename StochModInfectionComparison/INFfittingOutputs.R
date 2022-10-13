@@ -7,7 +7,7 @@ library(MuMIn)
 
 source(here(".//StochModInfectionComparison//INFmodelFunc.R"))
 
-#*******************************AIC**************************
+#*******************************AIC & parm vals**************************
 output <- readRDS(here("rdsOutputs//INFModelFitSameParms220714.rds"))
 # estimates
 infParms <- exp(output[[1]])
@@ -15,11 +15,16 @@ infParms <- exp(output[[1]])
 -2*(-output$value) + 2*2  # 121.5541
 
 
+
 output <- readRDS(here("rdsOutputs//INFModelFitSepParms220713.rds"))
 # estimates
 infParms <- exp(output[[1]])
 
 -2*(-output$value) + 2*3  # 60.951
+
+log10(infParms[2]) # aeg beta and muv
+log10(infParms[3]) # alb
+
 #************************************************************
 
 #***************************Weights****************************
