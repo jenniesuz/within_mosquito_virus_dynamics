@@ -3,14 +3,17 @@ library(here)
 library(parallel)
 library(binom)
 library(ggplot2)
+library(MuMIn)
 
 source(here(".//StochModInfectionComparison//INFmodelFunc.R"))
 
+#*******************************AIC & parm vals**************************
 output <- readRDS(here("rdsOutputs//INFModelFitSameParms220714.rds"))
 # estimates
 infParms <- exp(output[[1]])
 
--2*(-output$value) + 2*2  # 123.55
+-2*(-output$value) + 2*2  # 121.5541
+
 
 
 output <- readRDS(here("rdsOutputs//INFModelFitSepParms220713.rds"))
@@ -19,8 +22,13 @@ infParms <- exp(output[[1]])
 
 -2*(-output$value) + 2*3  # 60.951
 
+log10(infParms[2]) # aeg beta and muv
+log10(infParms[3]) # alb
 
+#************************************************************
 
+#***************************Weights****************************
+Weights(c(122,61))
 
 
 #***************************************

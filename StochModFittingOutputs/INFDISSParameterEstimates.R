@@ -2,22 +2,44 @@ library(gridExtra)
 library(ggplot2)
 library(binom)
 library(viridis)
+library(boot)
+library(plyr)
+library(ggfan)
+library(here)
 
 
 #*********Parameters estimated from midgut infection data****************
-aegInf <- readRDS("aegInffits.rds")  # read in parameter value estimates from fits
-albInf <- readRDS("albInffits.rds")
+#*
+
+
+output <- readRDS(here("rdsOutputs//INFModelFitSameParms220714.rds"))
+
+
+aegInf <- readRDS(here("rdsOutputs//aegInffits.rds"))  # read in parameter value estimates from fits
+albInf <- readRDS(here("rdsOutputs//albInffits.rds"))
 
 aegInfParams <- sapply(aegInf,"[[",2)
 albInfParams <- sapply(albInf,"[[",2)
+
+
 
 aegInf <- cbind.data.frame(muV=aegInfParams[1,]        # convert from list to dataframe
                            ,probInf=aegInfParams[2,]
                            ,species="Ae. aegypti"
 )
 # median estimate of beta for aegypti
-log10(median(aegInf$probInf))
-log10(range(aegInf$probInf))
+log10(mean(aegInf$probInf))
+
+set.seed(12345)
+bootReps <- boot(data=aegInf$probInf,statistic=function(x,i) log10(mean(x[i])),R=1000)
+aegCI <- boot.ci(bootReps)
+aegCI
+
+bootReps <- boot(data=aegInf$muV,statistic=function(x,i) mean(x[i]),R=1000)
+aegCI <- boot.ci(bootReps)
+aegCI
+
+
 
 
 albInf <- cbind.data.frame(muV=albInfParams[1,]
@@ -25,7 +47,17 @@ albInf <- cbind.data.frame(muV=albInfParams[1,]
                            ,species="Ae. albopictus"
 )
 # median estimate of beta for albopictus
-log10(median(albInf$probInf))
+log10(mean(albInf$probInf))
+
+bootReps <- boot(data=albInf$probInf,statistic=function(x,i) log10(mean(x[i])),R=1000)
+albCI <- boot.ci(bootReps)
+albCI
+
+
+bootReps <- boot(data=albInf$muV,statistic=function(x,i) mean(x[i]),R=1000)
+albCI <- boot.ci(bootReps)
+albCI
+
 
 datInf <- rbind.data.frame(aegInf,albInf)
 
@@ -72,15 +104,17 @@ betaPlot <- ggplot(datInf,aes(x=probInf,fill=species)) +
   )
 
 
+
+
+
+
+
+
+
+
 #****************************Dissemination********************************
 #*
 #*
-library(gridExtra)
-library(ggplot2)
-library(plyr)
-library(ggfan)
-library(binom)
-
 # read in model fits fits
 albF <- readRDS("albDissFits220418.rds")
 aegF <- readRDS("aegDissFits220418.rds")
@@ -109,11 +143,24 @@ listToDat <- function(output=alb, species="alb"){
 
 albDiss <- listToDat(albF)
 # median escae rate for albo
-log10(median(albDiss$escapeRate))
+log10(mean(albDiss$escapeRate))
+
+
+
+
+
 
 aegDiss <- listToDat(output=aegF,species="aeg")
 # median escape rate for aeg
 log10(median(aegDiss$escapeRate))
+
+
+
+
+
+
+
+
 
 datDiss <- rbind.data.frame(albDiss,aegDiss)
 
