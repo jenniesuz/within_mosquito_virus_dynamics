@@ -3,6 +3,7 @@ library(here)
 library(parallel)
 library(binom)
 library(ggplot2)
+library(MuMIn)
 
 source(here(".//StochModDisseminationComparison//DISSmodelFunc.R"))
 
@@ -314,3 +315,6 @@ ggplot(competenceDat) +
         ,strip.background = element_rect(fill="white",color="white")
   )  
 #************************************
+#*
+
+Weights(c(1178,1040,1021))
