@@ -7,6 +7,114 @@ library(MuMIn)
 
 source(here(".//StochModDisseminationComparison//DISSmodelFunc.R"))
 
+
+
+#*************all three parameters same between species**************
+output <- readRDS(here("rdsOutputs//DissModelFitSepAllParmsNoDiffs311022b.rds"))
+
+-2*(-output$value) + 2*3  # 8092
+# estimates
+MLEfits <- output[[1]]
+round(exp(MLEfits),6)
+#CIs
+fisherInfMatrix <- solve(-output$hessian) ## invert the Hessian, to estimate the covar-var matrix of parameter estimates
+round(exp(MLEfits + 1.96*sqrt(diag(fisherInfMatrix))),6)
+round(exp(MLEfits - 1.96*sqrt(diag(fisherInfMatrix))),6)
+
+
+
+prodRate1 <- exp(MLEfits)[1]
+prodRate2 <- exp(MLEfits)[1]
+cellSpread1 <- exp(MLEfits)[2]
+cellSpread2 <- exp(MLEfits)[2]
+escapeRate1 <- exp(MLEfits)[3]
+escapeRate2 <- exp(MLEfits)[4]
+
+
+#******************data to fit to********************
+competenceDat <- read.csv(here(".//Data//datCiotaOnyango.csv"))
+competenceDat <- competenceDat[competenceDat$Ref %in% "Onyango 2020",]
+bin <- binom.confint(x=competenceDat$NumDiss,n=competenceDat$NumInf,method="exact")
+competenceDat$meanDiss <- bin$mean
+competenceDat$lowerDiss <- bin$lower
+competenceDat$upperDiss <- bin$upper
+#****************************************************
+
+#*************************************************************************************
+#****run model with fitted values****
+
+simAeg <- sim.func(x=10^competenceDat$Conc.Min[competenceDat$Moz %in% "Ae. aegypti"][1]
+                   ,muV = 1.544027e-01
+                   ,infRate = 2.338052e-09
+                   ,prodRate = as.numeric(prodRate1)
+                   ,cellSpread = as.numeric(cellSpread1)
+                   ,escapeRate = as.numeric(escapeRate1)
+                   ,cMax = 400 
+                   ,hMax = 900)
+
+#**********first remove simulations where an infection didn't occur**********************
+inf <- ddply(simAeg,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
+inf$occurred[inf$occurred>0] <- 1
+noInf <- inf$run[inf$occurred == 0]                         
+simAeg <- simAeg[!simAeg$run %in% noInf,]
+#*******************************************************************************
+
+simAeg2 <- dissSummaryFunc2(simAeg)
+
+
+simAlb <- sim.func(x=10^competenceDat$Conc.Min[competenceDat$Moz %in% "Ae. albopictus"][1]
+                   ,muV = 1.544027e-01
+                   ,infRate = 5.494484e-08 
+                   ,prodRate =   as.numeric(prodRate2)
+                   ,cellSpread = as.numeric(cellSpread2)
+                   ,escapeRate =  as.numeric(escapeRate2)
+                   ,cMax = 400 
+                   ,hMax = 900)
+
+#**********first remove simulations where an infection didn't occur**********************
+inf <- ddply(simAlb,.(run),summarise,occurred=sum(inf))  # establish if infection occurred
+inf$occurred[inf$occurred>0] <- 1
+noInf <- inf$run[inf$occurred == 0]                         
+simAlb <- simAlb[!simAlb$run %in% noInf,]
+#*******************************************************************************
+
+simAlb2 <- dissSummaryFunc2(simAlb)
+
+#*************plot*************
+names(simAeg2) <- c("DPIDissorTrans","meanDiss")
+names(simAlb2) <- c("DPIDissorTrans","meanDiss")
+
+ggplot(competenceDat) +
+  geom_line(data=simAeg2,aes(x=DPIDissorTrans,y=meanDiss),linetype=3,alpha=0.7,col="royalblue4") +
+  geom_line(data=simAlb2,aes(x=DPIDissorTrans,y=meanDiss),linetype=3,alpha=0.7,col="dodgerblue") +
+  geom_errorbar(aes(x=DPIDissorTrans,ymin=lowerDiss,ymax=upperDiss),alpha=0.5) +
+  geom_point(aes(x=DPIDissorTrans,y=meanDiss,fill=factor(Moz)),shape=21) +
+  scale_fill_manual(values=c("royalblue4","dodgerblue")) +
+  labs(fill="",title="B") +
+  xlab("Days post blood meal") +
+  ylab("Proportion of infected mosquitoes \n with a disseminated infection") +
+  theme_set(theme_bw())  +    
+  theme(panel.border = element_blank()                   
+        ,axis.line = element_line(color = 'black')
+        ,text=element_text(size=8)
+        ,plot.margin=unit(c(0.2,0.1,0.1,0.1), "cm")
+        ,axis.text=element_text(size=6)
+        ,legend.key.size = unit(0.5,"line")   # here you can amend legend size and position
+        ,legend.background = element_blank()
+        ,legend.text=element_text(size=6)
+        ,strip.text=element_text(size=5)
+        ,legend.position="none"
+        ,strip.background = element_rect(fill="white",color="white")
+  )  
+#************************************
+
+
+
+
+
+
+
+
 #*************escape rate differs**************
 output <- readRDS(here("rdsOutputs//DissModelFitSepAllParmsEscapeRateDiff220811.rds"))
 
@@ -110,9 +218,9 @@ ggplot(competenceDat) +
 
 
 #*************escape rate and production rate differs**************
-output <- readRDS(here("rdsOutputs//DissModelFitSepAllParmserprDiff220815.rds"))
+output <- readRDS(here("rdsOutputs//DissModelFitSepAllParmserprDiff221107.rds"))
 
--2*(-output$value) + 2*5  # 1040.141
+-2*(-output$value) + 2*5  # 964.9617
 # estimates
 MLEfits <- output[[1]]
 round(exp(MLEfits),6)
@@ -218,9 +326,9 @@ ggplot(competenceDat) +
 
 
 #*************all params**************
-output <- readRDS(here("rdsOutputs//DissModelFitSepAllParms221011.rds"))
+output <- readRDS(here("rdsOutputs//DissModelFitSepAllParms221011b.rds"))
 
--2*(-output$value) + 2*6  # 1021
+-2*(-output$value) + 2*6  # 1020
 MLEfits <- output[[1]]
 round(exp(MLEfits),6)
 
@@ -317,4 +425,7 @@ ggplot(competenceDat) +
 #************************************
 #*
 
-Weights(c(1178,1040,1021))
+Weights(c(8092,1178,965,1020))
+
+8092-1021
+

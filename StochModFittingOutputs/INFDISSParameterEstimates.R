@@ -109,6 +109,7 @@ betaPlot <- ggplot(datInf,aes(x=probInf,fill=species)) +
 
 
 
+output <- readRDS(here("rdsOutputs//INFModelFitSameParms220714.rds"))
 
 
 
@@ -116,8 +117,8 @@ betaPlot <- ggplot(datInf,aes(x=probInf,fill=species)) +
 #*
 #*
 # read in model fits fits
-albF <- readRDS("albDissFits220418.rds")
-aegF <- readRDS("aegDissFits220418.rds")
+albF <- readRDS(here("rdsOutputs//albDissFits220418.rds"))
+aegF <- readRDS(here("rdsOutputs//aegDissFits220418.rds"))
 
 
 # function to change to dataframe and then bind together
@@ -143,23 +144,58 @@ listToDat <- function(output=alb, species="alb"){
 
 albDiss <- listToDat(albF)
 # median escae rate for albo
-log10(mean(albDiss$escapeRate))
+mean(albDiss$escapeRate)
+
+set.seed(12345)
+bootReps <- boot(data=albDiss$escapeRate,statistic=function(x,i) mean(x[i]),R=1000)
+albEscapeRateCI <- boot.ci(bootReps)
+albEscapeRateCI
 
 
 
-
-
+mean(albDiss$prodRate)
 
 aegDiss <- listToDat(output=aegF,species="aeg")
 # median escape rate for aeg
-log10(median(aegDiss$escapeRate))
+mean(aegDiss$escapeRate)
+
+
+bootReps <- boot(data=aegDiss$escapeRate,statistic=function(x,i) mean(x[i]),R=1000)
+aegEscapeRateCI <- boot.ci(bootReps)
+aegEscapeRateCI
+
+
+
+
+mean(aegDiss$prodRate)
+
+
+bootReps <- boot(data=aegDiss$prodRate,statistic=function(x,i) mean(x[i]),R=1000)
+aegProdRateCI <- boot.ci(bootReps)
+aegProdRateCI
+
+
+mean(albDiss$prodRate)
+bootReps <- boot(data=albDiss$prodRate,statistic=function(x,i) mean(x[i]),R=1000)
+albProdRateCI <- boot.ci(bootReps)
+albProdRateCI
+
+
+
+
+mean(albDiss$cellSpread)
+bootReps <- boot(data=albDiss$cellSpread,statistic=function(x,i) mean(x[i]),R=1000)
+albcellSpreadCI <- boot.ci(bootReps)
+albcellSpreadCI
 
 
 
 
 
-
-
+mean(aegDiss$cellSpread)
+bootReps <- boot(data=aegDiss$cellSpread,statistic=function(x,i) mean(x[i]),R=1000)
+aegcellSpreadCI <- boot.ci(bootReps)
+aegcellSpreadCI
 
 
 datDiss <- rbind.data.frame(albDiss,aegDiss)
