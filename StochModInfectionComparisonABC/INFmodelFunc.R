@@ -1,11 +1,13 @@
 library(adaptivetau)
 
-infectionModel <- function(startingVirus,parms=c(par1=0.03,par2=10^-8)
+infectionModel <- function(startingVirus
+                           ,par1
+                           ,par2
                      ){
   
   
-  params <- list(muV = as.numeric(parms[1])
-                 ,probInf = as.numeric(parms[2])
+  params <- list(muV = par1
+                 ,probInf = par2
                  ,prodRate =   1    
                  ,cellSpread = 10^-4  
                  ,escapeRate = 0.05    
