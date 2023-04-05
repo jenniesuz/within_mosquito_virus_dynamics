@@ -1,20 +1,14 @@
 source(here::here("StochModInfectionComparisonABC//INFmodelFunc.R"))
-library(parallel)
 
-repeatInfModel <- function(x=c(par1=log(0.03),par2=log(10^-8))
+repeatInfModel <- function(x=c(s=0.02,par1=0.03,par2=10^-8)
                            ,virusConcs=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. aegypti"]
                            ){
-  
+  set.seed(x[1])
   simEachConc <- tryCatch ({ 
     lapply(virusConcs,function(conc){
-    cl <- makeCluster(detectCores()-1)
-    clusterEvalQ(cl, {library(adaptivetau)})
-    environment(infectionModel) <- .GlobalEnv
-     clusterExport(cl, varlist=c("infectionModel","conc","x"),
-                envir=environment())
-  
-   repSim <- parLapply(cl,1:30,function(y){
-      out <- infectionModel(startingVirus=conc,par1=exp(x[1]),exp(par2=x[2]))
+
+   repSim <- lapply(cl,1:30,function(y){
+      out <- infectionModel(startingVirus=conc,par1=x[2],par2=x[3])
        dat<-data.frame(out)
       dat$run <- y
       dat$inf <- 0
@@ -23,7 +17,6 @@ repeatInfModel <- function(x=c(par1=log(0.03),par2=log(10^-8))
       return(dat[1,c("run","inf")])  # just return the run,  and whether infection was established
     })
 
-  #stopCluster()
     repSims <- do.call(rbind.data.frame,repSim)
     return(c("prop"=sum(repSims$inf)/(length(repSims$inf))
              ,"num"=sum(repSims$inf)
@@ -37,18 +30,21 @@ repeatInfModel <- function(x=c(par1=log(0.03),par2=log(10^-8))
           return(c(NA,NA,NA,NA))
     }
   )
- 
-  if(is.na(simEachConc[[1]][1])==F){  
-    simDat <- do.call(rbind.data.frame,simEachConc)
+  
+  if(is.na(simEachConc[1])==F){  
+  simDat <- do.call(rbind.data.frame,simEachConc)
   names(simDat) <- c("prop","num","denom","conc")
-  return(simDat$prop)
+  
+  
+  modGLM <- glm(matrix(c(num,denom-num),ncol=2) ~ log10(conc)
+                ,family="binomial"
+                ,data=simDat)
+  return(as.numeric(coef(modGLM)))
   }else{
-    return(c(-1,-1,-1,-1))
+    return(c(-9999,-9999))
   }
 }
 
-#startTime <- Sys.time()
-#test <- repeatInfModel()
-#endTime <- Sys.time()
-#endTime - startTime
-# c. 9 seconds to run model
+
+#test <- repeatInfModel(nsims=30
+#                       ,virusConcs=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. aegypti"])

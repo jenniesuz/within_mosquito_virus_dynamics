@@ -1,6 +1,6 @@
 library(EasyABC)
 library(binom)
-source(here::here("StochModInfectionComparisonABC//INFRepeatModelFunc.R"))
+source(here::here("StochModInfectionComparisonABCPar//INFRepeatModelFunc.R"))
 
 
 #******************data to fit to********************
@@ -12,32 +12,41 @@ competenceDat$lowerInf <- bin$lower
 competenceDat$upperInf <- bin$upper
 #****************************************************
 
+modAeg <- glm(matrix(c(NumInf,ITotal-NumInf),ncol=2) ~ ConcMax
+              ,family="binomial"
+              ,data=competenceDat[competenceDat$Moz %in% "Ae. aegypti",])
+coef(modAeg)
 
-priorParams <- list(c("unif",log(0.04),log(0.4))
-                   ,c("unif",log(10^-12),log(10^-5)))
-sum_stat_obs <- competenceDat$meanInf[competenceDat$Moz %in% "Ae. aegypti"]
+priorParams <- list(c("unif",0.01,0.04)
+                   ,c("unif",10^-10,10^-6))
+sum_stat_obs <- as.numeric(coef(modAeg))
 tolerance <- c(2,1)
 
 startTime <- Sys.time()
+
+#cl <- makeCluster(detectCores()-1)
+#clusterEvalQ(cl, {library(adaptivetau)})
+#environment(infectionModel) <- .GlobalEnv
+#clusterExport(cl, varlist=c("infectionModel","virusConcs","x"),
+#              envir=environment())
+
+
 ABC_Beaumont <- ABC_sequential(method="Beaumont"
                              , model=repeatInfModel
                              , prior=priorParams
-                             , nb_simul=500
+                             , nb_simul=10
                              , summary_stat_target=sum_stat_obs
                              , tolerance_tab=tolerance
                              ,verbose=F
-                             ,prior_test="X1>X2")
+                             ,use_seed=T
+                             ,n_cluster=detectCores()-1)
 
 endTime <- Sys.time()
 endTime - startTime
 
-hist(exp(ABC_Beaumont$param[,1]))
-hist(log10(exp(ABC_Beaumont$param[,2])))
-
-hist(ABC_Beaumont$stats[,1])
-
+hist(ABC_Beaumont$param[,1])
+hist(ABC_Beaumont$param[,2])
+hist(ABC_Beaumont$stats)
 hist(ABC_Beaumont$weights)
-
-plot(log10(exp(ABC_Beaumont$param[,2])),ABC_Beaumont$weight)
-plot(exp(ABC_Beaumont$param[,1]),ABC_Beaumont$weight)
+plot(ABC_Beaumont$param[,2],ABC_Beaumont$weight)
 
