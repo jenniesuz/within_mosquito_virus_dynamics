@@ -1,13 +1,7 @@
-
-library(gridExtra)
-library(ggplot2)
-library(binom)
-library(beepr)
-library(parallel)
-library(plyr)
 library(here)
+library(binom)
 #****model code****
-source(here("StochModInfectionComparison//INFmodelFunc.R"))
+source(here("StochModInfectionComparisonBeta//INFRepeatModelFunc.R"))
 #***likelihood****
 source(here("StochModInfectionComparison//INFfittingFuncsNLL.R"))
 
