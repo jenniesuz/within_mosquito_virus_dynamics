@@ -1,15 +1,6 @@
 source(here::here("StochModInfectionComparisonBeta//INFmodelFunc.R"))
 library(parallel)
 
-virus_params <- function(   muV = 0.13
-                            ,infRate = 10^-7.5
-                            ,prodRate = 50             
-                            ,cellSpread = 10^-4        
-                            ,escapeRate = 0.0024        
-                            ,cMax = 400                 
-)
-  return(as.list(environment()))
-
 
 repeatInfModel <- function(x=virus_params()
     ,startingVirus=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. aegypti"]
@@ -55,7 +46,7 @@ repeatInfModel <- function(x=virus_params()
   }
 }
 
-startTime <- Sys.time()
-test <- repeatInfModel()
-endTime <- Sys.time()
-endTime - startTime
+#startTime <- Sys.time()
+#test <- repeatInfModel()
+#endTime <- Sys.time()
+#endTime - startTime
