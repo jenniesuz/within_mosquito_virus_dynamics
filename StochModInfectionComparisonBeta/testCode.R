@@ -1,6 +1,8 @@
 library(here)
 library(binom)
 library(emdbook)
+library(EnvStats)
+
 #****model code****
 source(here("StochModInfectionComparisonBeta//INFRepeatModelFunc.R"))
 #***likelihood****
@@ -39,33 +41,33 @@ fails <- length(test$num[test$num %in% NA])
 
 stats <- lapply(unique(test$conc),function(z){
   temp <- test[test$conc %in% z,]
-  totI <- sum(temp$num,na.rm=T)
-  totD <- sum(temp$denom,na.rm=T)
-  meanProp <- totI/totD
-  meanCount <- mean(temp$num,na.rm=T)
   indPs <- temp$num/temp$denom
-  varProp <- sum((indPs - meanProp)^2)/(length(indPs - 1))
-  varCount <- sum((temp$num - meanCount)^2)/length(temp$num - 1)
+  meanP <- sum(temp$num)/sum(temp$denom)
   plot(1:length(temp$conc),indPs,ylim=c(0,1))
-    return(c(temp$conc[1],meanProp,meanCount,varProp,varCount,totI))
+  betaEst <- tryCatch( { ebeta(indPs) 
+                         
+                         }
+                       ,
+                       error=function(cond) {
+                         message(cond)
+                        return(c(NA,NA))
+                       }
+  )
+  if(is.na(betaEst[1])==F){
+    betaEst <- as.numeric(betaEst$parameters)
+  }    
+    return(c(temp$conc[1],betaEst,meanP))
 })
 
 stats <- do.call(rbind.data.frame,stats)
-names(stats) <- c("conc","meanProp","meanCount","varProp","varCount","totI")
+names(stats) <- c("conc","shape1","shape2","mean")
 
 
 
-test6 <- rbinom(100,30,stats$meanProp[6])
-plot(1:100,test6/30,ylim=c(0,1))
+rbetabinom(100,shape1=stats$shape1[7],shape2=stats$shape2[7],size=30,prob=stats$mean[7])
 
-a <- function(mean,var){
-  return( ( ((1-mean)/var^2) - 1/mean )*mean^2 )
-}
+dbetabinom(28,shape1=stats$shape1[7],shape2=stats$shape2[7],size=30)
+dbinom(28,size=30,prob=stats$mean[7])
 
-b <- function(a,mean){
-  return(  a*(1/mean - 1 ))
-}
 
-dbetabinom()
 
-rbetabinom(30,stats$meanProp[3],size=100,)

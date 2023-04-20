@@ -26,18 +26,18 @@ objFXN <- function(fit.params                                                   
 
 
 #************************parameters for two 'treatments'****************************
-#virus_params <- function(   muV = 0.1
-#                            ,infRate1 = 10^-7.5
-#                            ,infRate2 = 10^-7.5
-#                            ,prodRate1 =   1    
-#                            ,prodRate2 = 1
-#                            ,cellSpread1 = 10^-4  
-#                            ,cellSpread2 = 10^-4
-#                            ,escapeRate1 = 0.05
-#                            ,escapeRate2 = 0.05
-#                            ,cMax = 400  
-#)
-#  return(as.list(environment()))
+virus_params <- function(   muV = 0.1
+                            ,infRate1 = 10^-7.5
+                            ,infRate2 = 10^-7.5
+                            ,prodRate1 =   1    
+                            ,prodRate2 = 1
+                            ,cellSpread1 = 10^-4  
+                            ,cellSpread2 = 10^-4
+                            ,escapeRate1 = 0.05
+                            ,escapeRate2 = 0.05
+                            ,cMax = 400  
+)
+  return(as.list(environment()))
 #*****************************************************************************
 
 #**************************Function to wrap fitting and simulations for iteration*************
@@ -72,7 +72,6 @@ objFXN <- function(fit.params                                                   
 nll.binom <- function(parms=virus_params()
                       ,dat=competenceDat){ 
   
-  
   if (parms$muV > 1 
       | parms$infRate1 > 1  
       | parms$infRate2 > 1  
@@ -85,11 +84,16 @@ nll.binom <- function(parms=virus_params()
     ll <- -1000000000
   }else{                                                      
  
-    # replicate experiments across virus concentrations 
+    # separate parameters for each mosquito
+    parmsAeg  <- c("muV"=parms$muV,"infRate"=parms$infRate1,"prodRate"=parms$prodRate1,"cellSpread"=parms$cellSpread1,"escapeRate"=parms$escapeRate1,"cMax"=parms$cMax)
+    parmsAlb <- c("muV"=parms$muV,"infRate"=parms$infRate2,"prodRate"=parms$prodRate2,"cellSpread"=parms$cellSpread2,"escapeRate"=parms$escapeRate2,"cMax"=parms$cMax)
+    
+    #********aegypti******
+    # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
     cl <- makeCluster(detectCores()-1)
     clusterEvalQ(cl, {library(adaptivetau)})
     environment(repeatInfModel) <- .GlobalEnv
-    clusterExport(cl, varlist=c("infectionModel","repeatInfModel","dat","parms"),
+    clusterExport(cl, varlist=c("infectionModel","repeatInfModel","dat","parmsAeg"),
                   envir=environment())
     
     aeg <- parLapply(cl,1:100,function(y){
@@ -101,7 +105,7 @@ nll.binom <- function(parms=virus_params()
     
     aeg <- do.call(rbind,aeg) 
     # establish how many runs failed
-    fails <- length(aeg$num[aeg$num %in% NA])
+    #fails <- length(aeg$num[aeg$num %in% NA])
 
     stats <- lapply(unique(aeg$conc),function(z){
       temp <- aeg[aeg$conc %in% z,]
