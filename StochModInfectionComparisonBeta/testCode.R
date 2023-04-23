@@ -2,11 +2,13 @@ library(here)
 library(binom)
 library(emdbook)
 library(EnvStats)
-
+library(parallel)
 #****model code****
 source(here("StochModInfectionComparisonBeta//INFRepeatModelFunc.R"))
 #***likelihood****
 source(here("StochModInfectionComparison//INFfittingFuncsNLL.R"))
+
+library(plyr)
 
 virus_params <- function(   muV = 0.13
                             ,infRate = 10^-7.5

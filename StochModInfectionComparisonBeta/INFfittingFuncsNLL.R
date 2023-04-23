@@ -40,32 +40,6 @@ virus_params <- function(   muV = 0.1
   return(as.list(environment()))
 #*****************************************************************************
 
-#**************************Function to wrap fitting and simulations for iteration*************
-#repeatModelRunFunc <- function(x
-#                               ,conc=dat$Conc.Min
-#                               ,p1=parms$muV
-#                               ,p2=parms$infRate1
-#                               ,p3=parms$prodRate1
-#                               ,p4=parms$cellSpread1
-#                               ,p5=parms$escapeRate1
-#                               ,p6=parms$cMax
-#                               ){
-#  a<-x
-#  doseSim <- lapply(10^conc, sim.func
-#                    ,muV=p1
-#                    ,infRate=p2
-#                    ,prodRate=p3
-#                    ,cellSpread=p4
-#                    ,escapeRate=p5
-#                    ,cMax=p6)
-#  doseSim2 <- do.call(rbind.data.frame,doseSim)
-#  infDat <- ddply(doseSim2,.(conc,run),summarise,sumRuns=sum(inf))
-#  infDat$inf <- 0
-#  infDat$inf[infDat$sumRuns>0] <- 1
-#  infDat$run2 <- x
-#  return(infDat)
-#}
-#********************************************************************************
 
 
 #***********Likelihood function**********************************
@@ -98,7 +72,7 @@ nll.binom <- function(parms=virus_params()
     
     aeg <- parLapply(cl,1:100,function(y){
       #set.seed(y)
-      s <- repeatInfModel(x=parms,startingVirus=10^dat$ConcMax[dat$Moz %in% "Ae. aegypti"])
+      s <- repeatInfModel(x=parmsAeg,startingVirus=10^dat$ConcMax[dat$Moz %in% "Ae. aegypti"])
       return(s)
     })
   stopCluster(cl)
@@ -106,23 +80,45 @@ nll.binom <- function(parms=virus_params()
     aeg <- do.call(rbind,aeg) 
     # establish how many runs failed
     #fails <- length(aeg$num[aeg$num %in% NA])
-
+    aeg <- aeg[!aeg$conc %in% NA, ]
     stats <- lapply(unique(aeg$conc),function(z){
       temp <- aeg[aeg$conc %in% z,]
-      numM <- mean(temp$num,na.rm=T)
+      indPs <- 1 - temp$num/temp$denom
+      meanP <- 1 - sum(temp$num)/sum(temp$denom)
+      betaEst <- tryCatch( { ebeta(indPs) 
+      }
+      ,
+      error=function(cond) {
+        message(cond)
+        return(c(NA,NA))
+      }
+      )
+      if(is.na(betaEst[1])==F){
+        betaEst <- as.numeric(betaEst$parameters)
+      }    
+      return(c(temp$conc[1],betaEst,meanP))
     })
+    
+    stats <- do.call(rbind.data.frame,stats)
+    names(stats) <- c("conc","shape1","shape2","mean")
+    
     
     #*data*
     samples <- ddply(dat,.(Moz,Conc.Min),summarise, NumInf=sum(NumInf),Denom=sum(ITotal))
     samplesAeg <- samples[samples$Moz %in% "Ae. aegypti",]
     # samplesAlb <- samples[samples$Moz %in% "Ae. albopictus",]
-    samples <- rbind.data.frame(samplesAeg,samplesAlb)
+    #samples <- rbind.data.frame(samplesAeg,samplesAlb)
     
-    infDat[infDat %in% 0]<- 0.000000000001
-    infDat[infDat%in% 1]<- 0.999999999999
-    dbinoms <- dbinom(samples$Denom-samples$NumInf,samples$Denom,prob=1-infDat,log=T)
+    #samplesAeg[samplesAeg %in% 0]<- 0.000000000001
+    #samplesAeg[samplesAeg%in% 1]<- 0.999999999999
     
-    ll <- sum(dbinoms)  # log likelihood assuming data are Poisson distributed
+    dBetaBinoms <- dbetabinom(samplesAeg$Denom-samplesAeg$NumInf
+                              ,shape1=stats$shape1
+                              ,shape2=stats$shape2
+                              ,size=100 #,samplesAeg$Denom
+                              ,log=T)
+     
+    ll <- sum(dBetaBinoms,na.rm=T)  # log likelihood assuming data are Poisson distributed
     }
   }
 return(-ll)
