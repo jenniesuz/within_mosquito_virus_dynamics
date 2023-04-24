@@ -65,11 +65,18 @@ stats <- do.call(rbind.data.frame,stats)
 names(stats) <- c("conc","shape1","shape2","mean")
 
 
+# of course if all experimental replicates simulated result in either 0 or 1 there is no way to 
+# fit a beta distribution to the resulting probabilities - for the first and last concentrations
+# here there is certainty in either no infection or infection across all experiments when dose is low or high enough.
+# so underlying probablility would be 0 or 1 with no variance - set both shape parameters to zero?
+
+
 
 rbetabinom(100,shape1=stats$shape1[7],shape2=stats$shape2[7],size=30,prob=stats$mean[7])
+rbetabinom(100,shape1=0,shape2=0,size=30)
 
 dbetabinom(28,shape1=stats$shape1[7],shape2=stats$shape2[7],size=30)
-dbinom(28,size=30,prob=stats$mean[7])
+dbinom(30,size=30,prob=0)
 
 
 

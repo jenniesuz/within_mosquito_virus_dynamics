@@ -100,28 +100,29 @@ nll.binom <- function(parms=virus_params()
     })
     
     stats <- do.call(rbind.data.frame,stats)
-    names(stats) <- c("conc","shape1","shape2","mean")
+    names(stats) <- c("Conc.Min","shape1","shape2","mean")
     
+    if(length(stats$shape1[is.na(stats$shape1)])>0){
+      ll <- -1000000000
+    }else{
     
-    #*data*
+    #***********************data************************
     samples <- ddply(dat,.(Moz,Conc.Min),summarise, NumInf=sum(NumInf),Denom=sum(ITotal))
     samplesAeg <- samples[samples$Moz %in% "Ae. aegypti",]
-    # samplesAlb <- samples[samples$Moz %in% "Ae. albopictus",]
-    #samples <- rbind.data.frame(samplesAeg,samplesAlb)
-    
-    #samplesAeg[samplesAeg %in% 0]<- 0.000000000001
-    #samplesAeg[samplesAeg%in% 1]<- 0.999999999999
-    
-    dBetaBinoms <- dbetabinom(samplesAeg$Denom-samplesAeg$NumInf
+    samplesAeg <- merge(samplesAeg,stats,by.x="Conc.Min")
+    #***************************************************
+  
+    dBetaBinomsAeg <- dbetabinom(samplesAeg$Denom-samplesAeg$NumInf
                               ,shape1=stats$shape1
                               ,shape2=stats$shape2
-                              ,size=100 #,samplesAeg$Denom
+                              ,size=100 
                               ,log=T)
      
-    ll <- sum(dBetaBinoms,na.rm=T)  # log likelihood assuming data are Poisson distributed
+    ll <- sum(dBetaBinoms,na.rm=T)
     }
-  }
-return(-ll)
+    }
+  
+  return(-ll)
 }
 #**********************************************************
 
