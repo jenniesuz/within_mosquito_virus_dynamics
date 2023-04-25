@@ -62,7 +62,7 @@ nll.binom <- function(parms=virus_params()
     parmsAeg  <- c("muV"=parms$muV,"infRate"=parms$infRate1,"prodRate"=parms$prodRate1,"cellSpread"=parms$cellSpread1,"escapeRate"=parms$escapeRate1,"cMax"=parms$cMax)
     parmsAlb <- c("muV"=parms$muV,"infRate"=parms$infRate2,"prodRate"=parms$prodRate2,"cellSpread"=parms$cellSpread2,"escapeRate"=parms$escapeRate2,"cMax"=parms$cMax)
     
-    #********aegypti******
+    #********aegypti*******
     # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
     cl <- makeCluster(detectCores()-1)
     clusterEvalQ(cl, {library(adaptivetau)})
@@ -78,10 +78,9 @@ nll.binom <- function(parms=virus_params()
   stopCluster(cl)
     
     aeg <- do.call(rbind,aeg) 
-    # establish how many runs failed
-    #fails <- length(aeg$num[aeg$num %in% NA])
-    aeg <- aeg[!aeg$conc %in% NA, ]
-    stats <- lapply(unique(aeg$conc),function(z){
+    aeg <- aeg[!aeg$conc %in% NA,]
+    
+    statsAeg <- lapply(unique(aeg$conc),function(z){
       temp <- aeg[aeg$conc %in% z,]
       indPs <- 1 - temp$num/temp$denom
       meanP <- 1 - sum(temp$num)/sum(temp$denom)
@@ -89,7 +88,7 @@ nll.binom <- function(parms=virus_params()
       }
       ,
       error=function(cond) {
-        message(cond)
+        #message(cond)
         return(c(NA,NA))
       }
       )
@@ -99,27 +98,70 @@ nll.binom <- function(parms=virus_params()
       return(c(temp$conc[1],betaEst,meanP))
     })
     
-    stats <- do.call(rbind.data.frame,stats)
-    names(stats) <- c("Conc.Min","shape1","shape2","mean")
+    statsAeg <- do.call(rbind.data.frame,statsAeg)
+    names(statsAeg) <- c("Conc.Min","shape1","shape2","mean")
     
+    #*********albopictus************  
+    cl <- makeCluster(detectCores()-1)
+    clusterEvalQ(cl, {library(adaptivetau)})
+    environment(repeatInfModel) <- .GlobalEnv
+    clusterExport(cl, varlist=c("infectionModel","repeatInfModel","dat","parmsAlb"),
+                  envir=environment())
+    
+    alb <- parLapply(cl,1:100,function(y){
+      #set.seed(y)
+      s <- repeatInfModel(x=parmsAlb,startingVirus=10^dat$ConcMax[dat$Moz %in% "Ae. albopictus"])
+      return(s)
+    })
+    stopCluster(cl)
+    
+    alb <- do.call(rbind,alb) 
+    alb <- alb[!alb$conc %in% NA,]
+    
+    statsAlb <- lapply(unique(alb$conc),function(z){
+      temp <- alb[alb$conc %in% z,]
+      indPs <- 1 - temp$num/temp$denom
+      meanP <- 1 - sum(temp$num)/sum(temp$denom)
+      betaEst <- tryCatch( { ebeta(indPs) 
+      }
+      ,
+      error=function(cond) {
+        #message(cond)
+        return(c(NA,NA))
+      }
+      )
+      if(is.na(betaEst[1])==F){
+        betaEst <- as.numeric(betaEst$parameters)
+      }    
+      return(c(temp$conc[1],betaEst,meanP))
+    })
+    
+    statsAlb <- do.call(rbind.data.frame,statsAlb)
+    names(statsAlb) <- c("Conc.Min","shape1","shape2","mean")
+    
+    statsAeg$Moz <- "Ae. aegypti"
+    statsAlb$Moz <- "Ae. albopictus"
+    
+    stats <- rbind.data.frame(statsAeg,statsAlb)
+    
+    #*******************************
     if(length(stats$shape1[is.na(stats$shape1)])>0){
       ll <- -1000000000
     }else{
     
     #***********************data************************
     samples <- ddply(dat,.(Moz,Conc.Min),summarise, NumInf=sum(NumInf),Denom=sum(ITotal))
-    samplesAeg <- samples[samples$Moz %in% "Ae. aegypti",]
-    samplesAeg <- merge(samplesAeg,stats,by.x="Conc.Min")
+    samples <- merge(samples,stats,by.x=c("Moz","Conc.Min"))
     #***************************************************
   
-    dBetaBinomsAeg <- dbetabinom(samplesAeg$Denom-samplesAeg$NumInf
-                              ,shape1=stats$shape1
-                              ,shape2=stats$shape2
+    dBetaBinoms <- dbetabinom(samples$Denom-samples$NumInf
+                              ,shape1=samples$shape1
+                              ,shape2=samples$shape2
                               ,size=100 
                               ,log=T)
      
-    ll <- sum(dBetaBinoms,na.rm=T)
-    }
+      ll <- sum(dBetaBinoms)
+     }
     }
   
   return(-ll)

@@ -34,7 +34,8 @@ start <- Sys.time()
   #********initial parameter values****
   init.pars.fit <- c(
     log_muV=log(0.1)
-    ,log_infRate1=log(10^-7.5)
+    ,log_infRate1=log(10^-8.89)
+    ,log_infRate2=log(10^-7)
   )
   #********optimise*******
   optim.vals <- optim(par = init.pars.fit
