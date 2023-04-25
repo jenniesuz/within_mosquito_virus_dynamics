@@ -47,6 +47,6 @@ repeatInfModel <- function(x=virus_params()
 }
 
 #startTime <- Sys.time()
-#test <- repeatInfModel()
+test <- repeatInfModel()
 #endTime <- Sys.time()
 #endTime - startTime

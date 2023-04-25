@@ -26,9 +26,9 @@ objFXN <- function(fit.params                                                   
 
 
 #************************parameters for two 'treatments'****************************
-virus_params <- function(   muV = 0.1
-                            ,infRate1 = 10^-7.5
-                            ,infRate2 = 10^-7.5
+virus_params <- function(   muV = 0.13
+                            ,infRate1 = 10^-8
+                            ,infRate2 = 10^-7
                             ,prodRate1 =   1    
                             ,prodRate2 = 1
                             ,cellSpread1 = 10^-4  
@@ -84,7 +84,7 @@ nll.binom <- function(parms=virus_params()
       temp <- aeg[aeg$conc %in% z,]
       indPs <- 1 - temp$num/temp$denom
       meanP <- 1 - sum(temp$num)/sum(temp$denom)
-      betaEst <- tryCatch( { ebeta(indPs) 
+      betaEst <- tryCatch( { ebeta(indPs)$parameters 
       }
       ,
       error=function(cond) {
@@ -93,7 +93,7 @@ nll.binom <- function(parms=virus_params()
       }
       )
       if(is.na(betaEst[1])==F){
-        betaEst <- as.numeric(betaEst$parameters)
+        betaEst <- as.numeric(betaEst)
       }    
       return(c(temp$conc[1],betaEst,meanP))
     })
@@ -122,7 +122,7 @@ nll.binom <- function(parms=virus_params()
       temp <- alb[alb$conc %in% z,]
       indPs <- 1 - temp$num/temp$denom
       meanP <- 1 - sum(temp$num)/sum(temp$denom)
-      betaEst <- tryCatch( { ebeta(indPs) 
+      betaEst <- tryCatch( { ebeta(indPs)$parameters 
       }
       ,
       error=function(cond) {
@@ -131,8 +131,8 @@ nll.binom <- function(parms=virus_params()
       }
       )
       if(is.na(betaEst[1])==F){
-        betaEst <- as.numeric(betaEst$parameters)
-      }    
+        betaEst <- as.numeric(betaEst)
+      }     
       return(c(temp$conc[1],betaEst,meanP))
     })
     
@@ -145,10 +145,7 @@ nll.binom <- function(parms=virus_params()
     stats <- rbind.data.frame(statsAeg,statsAlb)
     
     #*******************************
-    if(length(stats$shape1[is.na(stats$shape1)])>0){
-      ll <- -1000000000
-    }else{
-    
+   
     #***********************data************************
     samples <- ddply(dat,.(Moz,Conc.Min),summarise, NumInf=sum(NumInf),Denom=sum(ITotal))
     samples <- merge(samples,stats,by.x=c("Moz","Conc.Min"))
@@ -159,11 +156,15 @@ nll.binom <- function(parms=virus_params()
                               ,shape2=samples$shape2
                               ,size=100 
                               ,log=T)
+    dBinoms <- dbinom(samples$Denom[samples$shape1 %in% NA]-samples$NumInf[samples$shape1 %in% NA]
+                      ,samples$Denom[samples$shape1 %in% NA],prob=samples$mean[samples$shape1 %in% NA])
      
+    if(sum(is.na(dBetaBinoms))==0){
       ll <- sum(dBetaBinoms)
+     }else{
+       ll<- -1000000000
      }
-    }
-  
+  }
   return(-ll)
 }
 #**********************************************************
