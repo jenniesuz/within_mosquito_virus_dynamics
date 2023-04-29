@@ -52,7 +52,7 @@ start <- Sys.time()
   #AIC
   -2*(-optim.vals$value) + 2*2
   
-  saveRDS(optim.vals,"INFModelFitSameParms230429.rds")
+  saveRDS(optim.vals,"INFModelFitSameParms220714.rds")
   
   
   #test <- readRDS("INFModelFitSepParms220713.rds")

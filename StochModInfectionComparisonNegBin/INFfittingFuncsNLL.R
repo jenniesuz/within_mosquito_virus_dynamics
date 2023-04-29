@@ -82,8 +82,8 @@ nll.binom <- function(parms=virus_params()
     
     statsAeg <- lapply(unique(aeg$conc),function(z){
       temp <- aeg[aeg$conc %in% z,]
-      indPs <- temp$num/temp$denom
-      meanP <- sum(temp$num)/sum(temp$denom)
+      indPs <- 1 - temp$num/temp$denom
+      meanP <- 1 - sum(temp$num)/sum(temp$denom)
       betaEst <- tryCatch( { ebeta(indPs) 
       }
       ,
@@ -120,8 +120,8 @@ nll.binom <- function(parms=virus_params()
     
     statsAlb <- lapply(unique(alb$conc),function(z){
       temp <- alb[alb$conc %in% z,]
-      indPs <- temp$num/temp$denom
-      meanP <- sum(temp$num)/sum(temp$denom)
+      indPs <- 1 - temp$num/temp$denom
+      meanP <- 1 - sum(temp$num)/sum(temp$denom)
       betaEst <- tryCatch( { ebeta(indPs) 
       }
       ,
@@ -145,25 +145,24 @@ nll.binom <- function(parms=virus_params()
     stats <- rbind.data.frame(statsAeg,statsAlb)
     
     #*******************************
+    if(length(stats$shape1[is.na(stats$shape1)])>0){
+      ll <- -1000000000
+    }else{
     
     #***********************data************************
     samples <- ddply(dat,.(Moz,Conc.Min),summarise, NumInf=sum(NumInf),Denom=sum(ITotal))
     samples <- merge(samples,stats,by.x=c("Moz","Conc.Min"))
     #***************************************************
-    betaBinDat <- samples[!is.na(samples$shape1),]
-    binomDat <- samples[is.na(samples$shape1),]
-    
-    dBetaBinoms <- dbetabinom(betaBinDat$NumInf
-                              ,shape1=betaBinDat$shape1
-                              ,shape2=betaBinDat$shape2
+  
+    dBetaBinoms <- dbetabinom(samples$Denom-samples$NumInf
+                              ,shape1=samples$shape1
+                              ,shape2=samples$shape2
                               ,size=100 
                               ,log=T)
      
-    dBinoms <- dbinom(binomDat$NumInf,binomDat$Denom,prob=binomDat$mean)
-    
-      ll <- sum(dBetaBinoms)+sum(dBinoms)
+      ll <- sum(dBetaBinoms)
      }
-    
+    }
   
   return(-ll)
 }
