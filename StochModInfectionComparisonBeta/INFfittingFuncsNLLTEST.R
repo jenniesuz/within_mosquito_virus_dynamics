@@ -17,7 +17,7 @@ subsParms <- function(fit.params, fixed.params=virus_params())
 ## Make likelihood a function of fixed and fitted parameters.
 objFXN <- function(fit.params                                                          ## paramters to fit
                    , fixed.params =virus_params()                                      ## fixed paramters
-                   , dat=temps.count
+                   , dat=testDat
                    , nSimulations=30) {
   parms <- subsParms(fit.params, fixed.params)
   nll.binom(parms, dat = dat, nSims=nSimulations)                                                           ## then call likelihood function
@@ -28,8 +28,6 @@ objFXN <- function(fit.params                                                   
 nll.binom <- function(parms=virus_params()
                       ,dat=testDat
                       ,nSims=30){ 
-  
-  parms$infRate <- 10^-parms$infRate
   
   if (parms$muV > 1 
       | parms$infRate > 1  
@@ -83,16 +81,18 @@ nll.binom <- function(parms=virus_params()
     betaBinDat <- samples[!is.na(samples$shape1),]
     binomDat <- samples[is.na(samples$shape1),]
     
+    if(length(binomDat$ConcMax>0)){
+      #dBinoms <- dbinom(binomDat$NumInf,binomDat$ITotal,prob=binomDat$mean,log=T)
+      ll <- -1000000000
+    }else{
+    
     dBetaBinoms <- dbetabinom(betaBinDat$NumInf
                               ,shape1=betaBinDat$shape1
                               ,shape2=betaBinDat$shape2
                               ,size=nSims 
                               ,log=T)
      
-    if(length(binomDat$ConcMax>0)){
-    dBinoms <- dbinom(binomDat$NumInf,binomDat$ITotal,prob=binomDat$mean)
-    ll <- sum(dBetaBinoms)+sum(dBinoms)
-    }else{
+    
       ll <- sum(dBetaBinoms)
     }
   }

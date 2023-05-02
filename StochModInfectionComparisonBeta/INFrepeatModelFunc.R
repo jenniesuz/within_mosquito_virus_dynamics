@@ -1,4 +1,3 @@
-source(here::here("StochModInfectionComparisonBeta//INFmodelFunc.R"))
 library(parallel)
 
 
