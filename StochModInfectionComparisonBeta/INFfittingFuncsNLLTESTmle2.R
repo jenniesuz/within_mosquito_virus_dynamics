@@ -1,35 +1,11 @@
 
-#********enable multiple parameters to be fit and substituted back in parameter list****
-subsParms <- function(fit.params, fixed.params=virus_params())
-  
-  within(fixed.params, {
-    loggedParms <- names(fit.params)[grepl('log_', names(fit.params))]
-    
-    unloggedParms <- names(fit.params)[!grepl('log_', names(fit.params))]  
-    
-    for(nm in unloggedParms) assign(nm, as.numeric(fit.params[nm]))
-    
-    for(nm in loggedParms) assign(gsub('log_','',nm), exp(as.numeric(fit.params[nm])))
-    
-    rm(nm, loggedParms, unloggedParms)
-  })           
-
-## Make likelihood a function of fixed and fitted parameters.
-objFXN <- function(fit.params                                                          ## paramters to fit
-                   , fixed.params =virus_params()                                      ## fixed paramters
-                   , dat=testDat
-                   , nSimulations=30) {
-  parms <- subsParms(fit.params, fixed.params)
-  nll.binom(parms, dat = dat, nSims=nSimulations)                                                           ## then call likelihood function
-}
-#***************************************************************************************
 
 #***********Likelihood function**********************************
-nll.binom <- function(parms=virus_params()
+nll.binom <- function(
+                      ,parms=virus_params()
                       ,dat=testDat
                       ,nSims=30){ 
   
- 
     # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
     cl <- makeCluster(detectCores()-1)
     clusterEvalQ(cl, {library(adaptivetau)})

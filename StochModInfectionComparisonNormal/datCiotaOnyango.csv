@@ -1,0 +1,15 @@
+Virus,Visolate,Moz,Continent,Country,StateOrOther,CountyorCity,MozGen,MozAge.min,MozAge.max,Conc.Min,ConcMax,ConcSE,Units,TempMin,TempMax,DPIInf,DPIDissorTrans,BMArt,NumInf,ITotal,NumDiss,DTotal,NumTrans,TTotal,TAssayArt,Conditional,IDAssay,Transmissiossay,Ref
+ZIKV,HND,Ae. aegypti,,Mexico,,Poza Rica,F4-F5,4,7,8.9,8.9,NA,a,NA,27,21,21,yes,20,22,19,20,16,20,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. aegypti,,Mexico,,Poza Rica,F4-F5,4,7,7.7,7.7,NA,a,NA,27,21,21,yes,14,30,12,14,11,14,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. aegypti,,Mexico,,Poza Rica,F4-F5,4,7,6.6,6.6,NA,a,NA,27,21,21,yes,5,30,2,5,2,5,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. aegypti,,Mexico,,Poza Rica,F4-F5,4,7,4.6,4.6,NA,a,NA,27,21,21,yes,1,30,0,1,0,1,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. albopictus,,USA,NY,Suffolk,F5-F7,4,7,8.9,8.9,NA,a,NA,27,21,21,yes,30,30,28,30,10,30,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. albopictus,,USA,NY,Suffolk,F5-F7,4,7,7.5,7.5,NA,a,NA,27,21,21,yes,28,30,21,28,6,28,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. albopictus,,USA,NY,Suffolk,F5-F7,4,7,5.9,5.9,NA,a,NA,27,21,21,yes,10,30,4,10,1,10,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. albopictus,,USA,NY,Suffolk,F5-F7,4,7,4.1,4.1,NA,a,NA,27,21,21,yes,3,30,2,3,0,3,yes,yes,RTPCR,,Ciota 2017
+ZIKV,HND,Ae. aegypti,,Mexico,,Poza Rica,Colony,NA,NA,8.3,8.3,NA,a,26,30,4,4,yes,27,30,15,27,2,15,yes,,RTPCR,,Onyango 2020
+ZIKV,HND,Ae. albopictus,,USA,NY,Suffolk,Colony,NA,NA,8.3,8.3,NA,a,26,30,4,4,yes,21,30,6,21,0,6,yes,,RTPCR,,Onyango 2020
+ZIKV,HND,Ae. aegypti,,Mexico,,Poza Rica,Colony,NA,NA,8.3,8.3,NA,a,26,30,7,7,yes,26,30,20,26,4,20,yes,,RTPCR,,Onyango 2020
+ZIKV,HND,Ae. albopictus,,USA,NY,Suffolk,Colony,NA,NA,8.3,8.3,NA,a,26,30,7,7,yes,29,30,25,29,3,25,yes,,RTPCR,,Onyango 2020
+ZIKV,HND,Ae. aegypti,,Mexico,,Poza Rica,Colony,NA,NA,8.3,8.3,NA,a,26,30,14,14,yes,22,30,19,22,13,19,yes,,RTPCR,,Onyango 2020
+ZIKV,HND,Ae. albopictus,,USA,NY,Suffolk,Colony,NA,NA,8.3,8.3,NA,a,26,30,14,14,yes,21,30,21,21,9,21,yes,,RTPCR,,Onyango 2020

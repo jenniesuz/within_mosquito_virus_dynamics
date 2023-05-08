@@ -1,15 +1,16 @@
 library(here)
 library(binom)
-library(emdbook)
-library(EnvStats)
 library(ggplot2)
 library(bbmle)
 library(parallel)
 library(adaptivetau)
+library(mvtnorm)
 #****model code****
-source(here("StochModInfectionComparisonBeta//INFRepeatModelFunc.R"))
+source(here("StochModInfectionComparisonNormal//INFmodelFunc.R"))
+
+source(here("StochModInfectionComparisonNormal//INFRepeatModelFunc.R"))
 #***likelihood****
-source(here("StochModInfectionComparison//INFfittingFuncsNLL.R"))
+source(here("StochModInfectionComparisonNormal//INFfittingFuncsNLL.R"))
 
 #******************data to fit to********************
 competenceDat <- read.csv(here(".//Data//datCiotaOnyango.csv"))
@@ -50,6 +51,43 @@ virus_params <- function(   muV = 0.1
 )
   return(as.list(environment()))
 #*****************************************************************************
+init.pars.fit <- c(
+  log_infRate1=log(10^-9)
+  ,log_infRate2=log(10^-7.5)
+)
+
+objFXN(fit.params=init.pars.fit                                                          ## paramters to fit
+                   , fixed.params =virus_params()                                      ## fixed paramters
+                   , dat=competenceDat
+                   , nSimulations=30)
+
+#************curve******************
+start <- Sys.time()
+testLik30 <- lapply(10^-7#10^-seq(7,9,0.1)
+                    ,function(x){
+  loglik <- nll.binom(parms=virus_params(muV=0.1
+                                         ,infRate1=x
+                                         ,infRate2=x)
+                      ,dat=competenceDat
+                      ,nSims=30) 
+  return(loglik)
+})
+
+testLik30 <- do.call(c,testLik30)
+end <- Sys.time()
+end-start
+
+dat <- cbind.data.frame(beta=10^-seq(7,8,0.05),ll=testLik30)
+
+ggplot(dat) +
+  geom_line(aes(x=log10(beta),y=ll)) +
+  ylim(0,25)
+
+
+
+
+#******************************************
+
 start <- Sys.time()
   trace<-3
   #********initial parameter values****
@@ -62,6 +100,7 @@ start <- Sys.time()
                       , objFXN
                       , fixed.params = virus_params()
                       , dat = competenceDat
+                      , nSimulations = 30
                       , control = list(trace = trace
                                        ,abstol=0.001
                                        ,reltol=0.001)

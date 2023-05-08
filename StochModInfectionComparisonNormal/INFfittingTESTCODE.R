@@ -1,10 +1,8 @@
 library(here)
 library(binom)
 library(bbmle)
-library(emdbook)
-library(EnvStats)
-library(optimx)
 library(ggplot2)
+library(adaptivetau)
 #****model code****
 source(here("StochModInfectionComparisonBeta//INFRepeatModelFunc.R"))
 #***likelihood****
@@ -32,48 +30,17 @@ names(testDat) <- c("NumInf","ITotal","ConcMax")
 
 #*****************************************************************************
 
-testRun <- repeatInfModel(virus_params(infRate=10^-7.5
-                                     ,muV=0.1)
-                        ,startingVirus=c(10^4,10^5,10^6,10^7,10^8)
-)
-
-testRun$mean <- testRun$num/testRun$denom
-names(testRun)[3]<- "ConcMax"
-
-plotDat +
-  geom_point(data=testRun,aes(x=ConcMax,y=mean),col="red")
-
 
 #***************explore likelihoods************
-nll.binom(parms=virus_params(muV=0.1
-                              ,infRate=10^-7.5)
-                              ,dat=testDat
-                              ,nSims=30) 
+objFXN(fit.params=init.pars                                                          ## paramters to fit
+       , fixed.params =virus_params()                                      ## fixed paramters
+       , dat=testDat
+       , nSimulations=30)
 
-nll.binom(parms=virus_params(muV=0.1
-                        ,infRate=10^-7)
-                       ,dat=testDat
-                       ,nSims=30) 
 
-# calculate likelihood for range of values - need to avoid
-# values where no simulations result in infection for a given concentration
-# or all simulations result in infection at a given concentration
-# but where data observe infection occurring - these are out of bounds
-# so these need to be set at the start of the fitting process as input parameters
-# and from consultation of the data
-
+# calculate likelihood for range of values 
 # have to constrain the data to be between 1 infected and n-1
-# have to constrain the model parameters to the space in which the 
-# simulations follow a beta distribution not binomial. - if can't calculate 
-# a beta distribution is it better to reutrn a very low likelihood
-# as saying that the parameter values are out of bounds - if the
-# model is saying something is 100% certain then can't be right
-# parameterisation....therefore it becomes important to do more
-# 'experiments' or more 'mosquitoes' to ensure that our
-# near-zero and near-one but not quite either are represented.
-# however this comes at a computational cost... can we still 
-# get there if we use lower sims and just put a restriction
-# on the liklihood?
+
 
 start <- Sys.time()
 testLik30 <- lapply(10^-seq(7,8,0.05),function(x){
@@ -104,27 +71,6 @@ init.pars.fit <- c(
  # ,log_muV=log(0.015)
 )
 
-#***********try GenSA
-
-library(GenSA)#
-
-start <- Sys.time()
-optim.valsGSA <- GenSA(par = init.pars.fit
-                       ,fn = objFXN
-                       ,dat=testDat
-                       ,nSimulations = 30
-                       ,fixed.params = virus_params()
-                       ,lower=c(log(10^-8.5))
-                       ,upper=c(log(10^-6))
-                       ,control=list(smooth=F) #,thresold.stop=1)
-                       
-)
-
-
-end <- Sys.time()
-end-start
-
-  
 
 # tol 0.0001 too small
 # tol 0.001 took 10 mins to 49 mins
@@ -133,7 +79,7 @@ end-start
 start <- Sys.time()
 
 #********optimise*******
-optim.vals2 <- optim(par = init.pars.fit
+optim.vals <- optim(par = init.pars.fit
                     , objFXN
                     , fixed.params = virus_params()
                     , nSimulations = 30

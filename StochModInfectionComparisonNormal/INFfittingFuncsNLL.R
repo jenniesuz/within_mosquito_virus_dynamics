@@ -17,17 +17,17 @@ subsParms <- function(fit.params, fixed.params=virus_params())
 ## Make likelihood a function of fixed and fitted parameters.
 objFXN <- function(fit.params                                                          ## paramters to fit
                    , fixed.params =virus_params()                                      ## fixed paramters
-                   , dat=testDat
+                   , dat=competenceDat
                    , nSimulations=30) {
   parms <- subsParms(fit.params, fixed.params)
-  nll.binom(parms, dat = dat, nSims=nSimulations)                                                           ## then call likelihood function
+  nll.binom(parms=parms, dat = dat, nSims=nSimulations)                                                           ## then call likelihood function
 }
 #***************************************************************************************
 
 #***********Likelihood function**********************************
 nll.binom <- function(parms=virus_params()
                       ,dat=competenceDat
-                      ,nSims=100){ 
+                      ,nSims=30){ 
   
   datAeg <- dat[dat$Moz %in% "Ae. aegypti",]
   datAlb <- dat[dat$Moz %in% "Ae. albopictus",]
@@ -52,34 +52,26 @@ nll.binom <- function(parms=virus_params()
     clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","datAeg","parmsAeg"),
                   envir=environment())
     
-    sims <- parLapply(cl,1:nSims,function(y){
+    simsAeg <- parLapply(cl,1:nSims,function(y){
       #set.seed(y)
       s <- repeatInfModel(x=parmsAeg,startingVirus=10^datAeg$ConcMax)
+      s$run <- y
+      names(s) <-c("num","denom","conc","run")
       return(s)
     })
   stopCluster(cl)
+  
     
-    sims <- do.call(rbind,sims) 
+    simsAeg <- do.call(rbind,simsAeg) 
     
-    stats <- lapply(unique(sims$conc),function(z){
-      temp <- sims[sims$conc %in% z,]
-      indPs <- temp$num/temp$denom
-      meanP <- sum(temp$num)/sum(temp$denom)
-      betaEst <- tryCatch( { ebeta(indPs) 
-      }
-      ,
-      error=function(cond) {
-        return(c(NA,NA))
-      }
-      )
-      if(is.na(betaEst[1])==F){
-        betaEst <- as.numeric(betaEst$parameters)
-      }    
-      return(c(temp$conc[1],betaEst,meanP))
+    stats <- lapply(unique(simsAeg$run),function(z){
+      temp <- simsAeg[simsAeg$run %in% z,]
+      mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
+      return(c(temp$run[1],as.vector(coef(mod))))
     })
     
     statsAeg <- do.call(rbind.data.frame,stats)
-    names(statsAeg) <- c("ConcMax","shape1","shape2","mean")
+    names(statsAeg) <- c("run","par1","par2")
     
     #*******************************
     
@@ -91,56 +83,44 @@ nll.binom <- function(parms=virus_params()
     clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","datAlb","parmsAlb"),
                   envir=environment())
     
-    sims <- parLapply(cl,1:nSims,function(y){
+    simsAlb <- parLapply(cl,1:nSims,function(y){
       #set.seed(y)
       s <- repeatInfModel(x=parmsAlb,startingVirus=10^datAlb$ConcMax)
+      s$run <- y
+      names(s) <-c("num","denom","conc","run")
       return(s)
     })
     stopCluster(cl)
     
-    sims <- do.call(rbind,sims) 
+    simsAlb <- do.call(rbind,simsAlb) 
     
-    stats <- lapply(unique(sims$conc),function(z){
-      temp <- sims[sims$conc %in% z,]
-      indPs <- temp$num/temp$denom
-      meanP <- sum(temp$num)/sum(temp$denom)
-      betaEst <- tryCatch( { ebeta(indPs) 
-      }
-      ,
-      error=function(cond) {
-        return(c(NA,NA))
-      }
-      )
-      if(is.na(betaEst[1])==F){
-        betaEst <- as.numeric(betaEst$parameters)
-      }    
-      return(c(temp$conc[1],betaEst,meanP))
+    stats <- lapply(unique(simsAlb$run),function(z){
+      temp <- simsAlb[simsAlb$run %in% z,]
+      mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
+      return(c(temp$run[1],as.vector(coef(mod))))
     })
     
     statsAlb <- do.call(rbind.data.frame,stats)
-    names(statsAlb) <- c("ConcMax","shape1","shape2","mean")
-    
-    #*******************************
-    statsAeg$Moz <- "Ae. aegypti"
-    statsAlb$Moz <- "Ae. albopictus"
-    stats <- rbind.data.frame(statsAeg,statsAlb)
+    names(statsAlb) <- c("run","par1","par2")
+
     #***********************data************************
-     samples <- merge(dat,stats,by.x=c("Moz","ConcMax"))
+    modDatAeg <- glm(datAeg$NumInf/datAeg$ITotal~datAeg$ConcMax,family="binomial",weights=datAeg$ITotal)
+    modDatAlb <- glm(datAlb$NumInf/datAlb$ITotal~datAlb$ConcMax,family="binomial",weights=datAlb$ITotal)
+
     #***************************************************
     
-     if(length(samples$Moz[is.na(samples$shape1)])){
-       ll<--100000000
-     }else{
+    llAeg <- dmvnorm(c(coef(modDatAeg))
+                  ,mean=c(mean(statsAeg[,2])
+                          ,mean(statsAeg[,3]))
+                  ,sigma=cov(statsAeg[,2:3]),log=T)
 
-    dBetaBinoms <- dbetabinom(samples$NumInf
-                              ,shape1=samples$shape1
-                              ,shape2=samples$shape2
-                              ,size=nSims 
-                              ,log=T)
-     
     
-      ll <- sum(dBetaBinoms)
-     }
+    llAlb <- dmvnorm(c(coef(modDatAlb))
+                     ,mean=c(mean(statsAlb[,2])
+                             ,mean(statsAlb[,3]))
+                     ,sigma=cov(statsAlb[,2:3]),log=T)
+    
+     ll <- sum(llAeg,llAlb)
   return(-ll)
 }
 #**********************************************************

@@ -26,7 +26,7 @@ objFXN <- function(fit.params                                                   
 
 #***********Likelihood function**********************************
 nll.binom <- function(parms=virus_params()
-                      ,dat=testDat
+                      ,dat=competenceDat
                       ,nSims=30){ 
   
  
@@ -40,55 +40,33 @@ nll.binom <- function(parms=virus_params()
     sims <- parLapply(cl,1:nSims,function(y){
       #set.seed(y)
       s <- repeatInfModel(x=parms,startingVirus=10^dat$ConcMax)
+      s$run <- y
       return(s)
     })
   stopCluster(cl)
     
     sims <- do.call(rbind,sims) 
     
-    stats <- lapply(unique(sims$conc),function(z){
-      temp <- sims[sims$conc %in% z,]
-      indPs <- temp$num/temp$denom
-      meanP <- sum(temp$num)/sum(temp$denom)
-      betaEst <- tryCatch( { ebeta(indPs) 
-      }
-      ,
-      error=function(cond) {
-        return(c(NA,NA))
-      }
-      )
-      if(is.na(betaEst[1])==F){
-        betaEst <- as.numeric(betaEst$parameters)
-      }    
-      return(c(temp$conc[1],betaEst,meanP))
+    stats <- lapply(unique(sims$run),function(z){
+      temp <- sims[sims$run %in% z,]
+      mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
+      return(c(temp$run[1],as.vector(coef(mod))))
     })
     
     stats <- do.call(rbind.data.frame,stats)
-    names(stats) <- c("ConcMax","shape1","shape2","mean")
+    names(stats) <- c("run","par1","par2")
     
     #*******************************
     
     #***********************data************************
-     samples <- merge(stats,dat,by.x=c("ConcMax"))
+     modDat <- glm(dat$NumInf/dat$ITotal~dat$ConcMax,family="binomial",weights=dat$ITotal)
     #***************************************************
-    betaBinDat <- samples[!is.na(samples$shape1),]
-   # binomDat <- samples[is.na(samples$shape1),]
+ 
+    ll <- dmvnorm(c(coef(modDat))
+            ,mean=c(mean(stats[,2])
+                    ,mean(stats[,3]))
+            ,sigma=cov(stats[,2:3]),log=T)
     
-   # if(length(binomDat$ConcMax>0)){
-      #dBinoms <- dbinom(binomDat$NumInf,binomDat$ITotal,prob=binomDat$mean,log=T)
-  #    ll <- -1000000000
-  #  }else{
-    
-    dBetaBinoms <- dbetabinom(betaBinDat$NumInf
-                              ,shape1=betaBinDat$shape1
-                              ,shape2=betaBinDat$shape2
-                              ,size=nSims 
-                              ,log=T)
-     
-    
-      ll <- sum(dBetaBinoms)
-   # }
-  #}
     
   return(-ll)
 }
