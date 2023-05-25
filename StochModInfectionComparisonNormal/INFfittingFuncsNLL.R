@@ -38,7 +38,7 @@ nll.binom <- function(parms=virus_params()
                      ,parms$escapeRate1          
                      ,parms$cMax)
   parmsAlb <- c(parms$muV 
-                ,parms$infRate2 
+                ,parms$infRate2
                 ,parms$prodRate1              
                 ,parms$cellSpread1      
                 ,parms$escapeRate1      
@@ -61,17 +61,21 @@ nll.binom <- function(parms=virus_params()
     })
   stopCluster(cl)
   
-    
     simsAeg <- do.call(rbind,simsAeg) 
     
     stats <- lapply(unique(simsAeg$run),function(z){
       temp <- simsAeg[simsAeg$run %in% z,]
+      temp <- temp[!temp$num %in% NA,]
+      if(length(temp$num)>0){
       mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
-      return(c(temp$run[1],as.vector(coef(mod))))
+      coefs <- as.vector(coef(mod))
+      return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
+      }
+      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
     })
     
     statsAeg <- do.call(rbind.data.frame,stats)
-    names(statsAeg) <- c("run","par1","par2")
+    
     
     #*******************************
     
@@ -96,18 +100,24 @@ nll.binom <- function(parms=virus_params()
     
     stats <- lapply(unique(simsAlb$run),function(z){
       temp <- simsAlb[simsAlb$run %in% z,]
-      mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
-      return(c(temp$run[1],as.vector(coef(mod))))
+      temp <- temp[!temp$num %in% NA,]
+      if(length(temp$num)>0){
+        mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
+        coefs <- as.vector(coef(mod))
+        return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
+      }
+      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
     })
     
     statsAlb <- do.call(rbind.data.frame,stats)
-    names(statsAlb) <- c("run","par1","par2")
 
     #***********************data************************
     modDatAeg <- glm(datAeg$NumInf/datAeg$ITotal~datAeg$ConcMax,family="binomial",weights=datAeg$ITotal)
     modDatAlb <- glm(datAlb$NumInf/datAlb$ITotal~datAlb$ConcMax,family="binomial",weights=datAlb$ITotal)
 
     #***************************************************
+    statsAeg<- statsAeg[!statsAeg$par1 %in% NA,]
+    statsAlb<- statsAlb[!statsAlb$par1 %in% NA,]
     
     llAeg <- dmvnorm(c(coef(modDatAeg))
                   ,mean=c(mean(statsAeg[,2])
