@@ -137,3 +137,73 @@ nll.binom <- function(parms=virus_params()
 
 
 
+
+
+
+#**********************for mle2******************
+#***********Likelihood function**********************************
+nll.binom.mle2 <- function(logmuV=log(0.1)
+                      ,loginfRate=log(10^-8)
+                      ,prodRate=1
+                      ,cellSpread=10^-4
+                      ,escapeRate=0.05
+                      ,cMax=400
+                      ,dat=competenceDat
+                      ,nSims=30){ 
+  if(exp(logmuV)>1|exp(loginfRate)>0.005){ll<- -10000000}else{
+  parms <- c("muV"=exp(logmuV) 
+                ,"infRate"=exp(loginfRate) 
+                ,"prodRate"=prodRate          
+                ,"cellSpread"=cellSpread       
+                ,"escapeRate"=escapeRate         
+                ,"cMax"=cMax)
+
+  # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
+  cl <- makeCluster(detectCores()-1)
+  clusterEvalQ(cl, {library(adaptivetau)})
+  environment(repeatInfModel) <- .GlobalEnv
+  clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","dat","parms"),
+                envir=environment())
+  
+  sims <- parLapply(cl,1:nSims,function(y){
+    #set.seed(y)
+    s <- repeatInfModel(x=parms,startingVirus=10^dat$ConcMax)
+    s$run <- y
+    names(s) <-c("num","denom","conc","run")
+    return(s)
+  })
+  stopCluster(cl)
+  
+  sims <- do.call(rbind,sims) 
+  
+  stats <- lapply(unique(sims$run),function(z){
+    temp <- sims[sims$run %in% z,]
+    temp <- temp[!temp$num %in% NA,]
+    if(length(temp$num)>0){
+      mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
+      coefs <- as.vector(coef(mod))
+      return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
+    }
+    else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
+  })
+  
+  stats <- do.call(rbind.data.frame,stats)
+  
+  #***********************data************************
+  modDat <- glm(dat$NumInf/dat$ITotal~dat$ConcMax,family="binomial",weights=dat$ITotal)
+
+  #***************************************************
+  stats <- stats[!stats$par1 %in% NA,]
+  if(length(stats)==0){ll<- -10000000000}else{
+  ll <- dmvnorm(c(coef(modDat))
+                   ,mean=c(mean(stats[,2])
+                           ,mean(stats[,3]))
+                   ,sigma=cov(stats[,2:3]),log=T)
+  }
+}
+
+  return(-ll)
+
+}
+#**********************************************************
+
