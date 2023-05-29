@@ -32,8 +32,6 @@ AIC(SppModInt)
 
 
 #**********************get approx starting parameters*********************
-ggplot(competenceDat) +
-  geom_point(aes(x=ConcMax,y=meanInf,col=Moz))
 
 virus_params <- function(   muV = 0.1
                             ,infRate1 = 10^-8
@@ -44,10 +42,35 @@ virus_params <- function(   muV = 0.1
 )
   return(as.list(environment()))
 
-testAeg <- repeatInfModel(x=virus_params(infRate1=10^-8)
- ,startingVirus=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. aegypti"]
+
+#******** values for Aedes aegypti ************
+testAeg <- repeatInfModel(x=virus_params(infRate1=10^-7)
+                          ,startingVirus=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. aegypti"]
 )
-testAeg
+modAeg <- glm(num/denom~conc,family="binomial",weights=denom,data=testAeg)
+predAeg<-predict(modAeg,type="response",newdata=newData)
+predAeg <- cbind.data.frame("conc"=seq(4,10,0.5),"predVals"=predAeg)
+#*********** values for Aedes albopictus *******
+
+#*
+testAlb <- repeatInfModel(x=virus_params(infRate1=10^-7)
+ ,startingVirus=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. albopictus"]
+)
+modAlb <- glm(num/denom~conc,family="binomial",weights=denom,data=testAlb)
+predAlb<-predict(modAlb,type="response",newdata=newData)
+predAlb <- cbind.data.frame("conc"=seq(4,10,0.5),"predVals"=predAlb)
+#*********** values for Aedes albopictus *******
+
+ggplot(competenceDat) +
+  geom_point(aes(x=ConcMax,y=meanInf,col=Moz)) +
+  geom_line(data=predAeg,aes(x=conc,y=predVals)) +
+  geom_line(data=predAlb,aes(x=conc,y=predVals))
+
+
+
+
+
+
 
 #************************parameters for two 'treatments'****************************
 virus_params <- function(   muV = 0.1
@@ -183,4 +206,4 @@ stats <- lapply(unique(simsAeg$run),function(z){
   
 statsAeg <- do.call(rbind.data.frame,stats)
 
-linesAeg <- 
+
