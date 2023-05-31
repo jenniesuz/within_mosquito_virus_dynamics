@@ -119,16 +119,16 @@ nll.binom <- function(parms=virus_params()
     statsAeg<- statsAeg[!statsAeg$par1 %in% NA,]
     statsAlb<- statsAlb[!statsAlb$par1 %in% NA,]
     
-    llAeg <- dmvnorm(c(coef(modDatAeg))
-                  ,mean=c(mean(statsAeg[,2])
+    llAeg <- emdbook::dmvnorm(c(coef(modDatAeg))
+                  ,mu=c(mean(statsAeg[,2])
                           ,mean(statsAeg[,3]))
-                  ,sigma=cov(statsAeg[,2:3]),log=T)
+                  ,Sigma=cov(statsAeg[,2:3]),log=T)
 
     
-    llAlb <- dmvnorm(c(coef(modDatAlb))
-                     ,mean=c(mean(statsAlb[,2])
+    llAlb <- emdbook::dmvnorm(c(coef(modDatAlb))
+                     ,mu=c(mean(statsAlb[,2])
                              ,mean(statsAlb[,3]))
-                     ,sigma=cov(statsAlb[,2:3]),log=T)
+                     ,Sigma=cov(statsAlb[,2:3]),log=T)
     
      ll <- sum(llAeg,llAlb)
   return(-ll)

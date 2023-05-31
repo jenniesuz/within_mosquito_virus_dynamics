@@ -14,9 +14,20 @@ source(here("StochModInfectionComparisonNormal//INFfittingFuncsNLL.R"))
 
 require(boot); require(deSolve); require(ellipse); require(coda); require(parallel); require(mnormt); require(emdbook)
 
+#******************data to fit to********************
+competenceDat <- read.csv(here("StochModInfectionComparisonNormal//datCiotaOnyango.csv"))
+competenceDat <- competenceDat[competenceDat$Ref %in% "Ciota 2017",]
+bin <- binom.confint(x=competenceDat$NumInf,n=competenceDat$ITotal,method="exact")
+competenceDat$meanInf <- bin$mean
+competenceDat$lowerInf <- bin$lower
+competenceDat$upperInf <- bin$upper
+#****************************************************
+
+
 ## Function that makes a list of disease parameters with default values
 virus_params <- function(   muV = 0.1
                             ,infRate1 = 10^-8
+                            ,infRate2 = 10^-8
                             ,prodRate1 = 10            # note these parameters don't matter for infection
                             ,cellSpread1 = 10^-4        
                             ,escapeRate1 = 0.05         #
@@ -34,13 +45,13 @@ lprior <- function(parms=virus_params()) with(parms, {
 ## Convenience function that sums log-likelihood & log-prior for
 ## evaluation inside MCMC sampler.
 llikePrior <- function(fit.params=NULL, ## parameters to fit
-                       ref.params = disease_params(), ## reference parameters
-                       obsDat=myDat) { ## observed data
+                       ref.params = virus_params(), ## reference parameters
+                       dat=competenceDat) { ## observed data
     parms <- within(ref.params, { ## subs fitting parameters into reference parameter vector
         for(nm in names(fit.params)) assign(nm, as.numeric(fit.params[nm]))
         rm(nm)
     })
-    -nll.binom(parms, dat=competenceDat,nSims=30) + lprior(parms)
+    -nll.binom(parms, dat=dat,nSims=30) + lprior(parms)
 }
 llikePrior(dat=competenceDat)
 
@@ -53,21 +64,22 @@ logParms <- function(fit.params) {
     names(fit.params) <- paste0('log',names(fit.params))
     return(fit.params)
 }
-logParms(c(alpha = 3, Beta=.3))
+logParms(c(infRate1 = 10^-8, infRate2=10^-8))
+
 unlogParms <- function(fit.params) {
     fit.params <- exp(fit.params)
     names(fit.params) <- sub('log','', names(fit.params))
     return(fit.params)
 }
-unlogParms(logParms(c(alpha = 3, Beta=.3)))
+unlogParms(logParms(c(infRate1=10^-8, infRate2=10^-8)))
 
 ## set bounds on initial parameter guesses
 initBounds <- data.frame(rbind( ## for initial conditions
-                               c(log(.2),log(2)) ## beta
-                               ,c(log(1), log(30)) ## alpha
-                               ,c(log(1),log(1/10)))) ## progRt
+                               c(log(10^-10),log(10^-6)) ## infRate1
+                               ,c(log(10^-10), log(10^-6)) ## infRate2
+                               ,c(log(0.01),log(0.3)))) ## muV
 colnames(initBounds) <- c('lower','upper')
-rownames(initBounds) <- c('logBeta','logalpha','logprogRt')
+rownames(initBounds) <- c('loginfRate1','loginfRate2','logmuV')
 class(initBounds[,2]) <- class(initBounds[,1]) <- 'numeric'
 initBounds
 
@@ -80,15 +92,14 @@ initRand <- function(fit.params) {
     return(unlogParms(fit.params))
 }
 ## give it parameter vector and it will simulate random values within the bounds for those values
-initRand(c(alpha = 3, Beta = 1)) 
-initRand(c(alpha = NA, Beta = NA)) ## independent of the inputs, just requires the parameter vector names
+initRand(c(infRate1=10^-8, infRate2=10^-8,muV=0.1)) 
 
 ## Flexible Metropolis-Hastings Sampler
 mcmcSampler <- function(init.params, ## initial parameter guess
                         randInit = T, ## if T then randomly sample initial parameters instead of above value
                         seed = 1, ## RNG seed
-                        ref.params=disease_params(), ## fixed parameters
-                        obsDat = myDat, ## data
+                        ref.params=virus_params(), ## fixed parameters
+                        obsDat = competenceDat, ## data
                         proposer = sequential.proposer(sdProps=sdProps), ## proposal distribution
                         niter = 100, ## MCMC iterations
                         nburn = 0, ## iterations to automatically burn
@@ -104,7 +115,7 @@ mcmcSampler <- function(init.params, ## initial parameter guess
     vv <- 2 ## mcmc iteration (started at 1 so we're already on 2
     accept <- 0 ## initialize proportion of iterations accepted
     ## Calculate log(likelihood X prior) for first value
-    curVal <- llikePrior(current.params, ref.params = ref.params, obsDat=obsDat)
+    curVal <- llikePrior(current.params, ref.params = ref.params, dat=obsDat)
     ## Initialize matrix to store MCMC chain
     out <- matrix(NA, nr = niter, nc=length(current.params)+1)
     out[1,] <- c(current.params, ll = -curVal) ## add first value
@@ -128,7 +139,7 @@ mcmcSampler <- function(init.params, ## initial parameter guess
         }
         proposal <- proposer$fxn(logParms(current.params))
         proposal <- unlogParms(proposal)
-        propVal <- llikePrior(proposal, ref.params = ref.params, obsDat=obsDat)
+        propVal <- llikePrior(proposal, ref.params = ref.params, dat=obsDat)
         lmh <- propVal - curVal ## likelihood ratio = log likelihood difference
         if (is.na(lmh)) { ## if NA, print informative info but don't accept it
             print(list(lmh=lmh, proposal=exp(proposal), vv=vv, seed=seed))
@@ -188,17 +199,17 @@ multiv.proposer <- function(covar, blockLS = list(rownames(covar))) {
 
 
 
-samp_Seq <- mcmcSampler(init.params = c(alpha=8, Beta=.9)
+samp_Seq <- mcmcSampler(init.params = c(infRate1=10^-9,infRate2=10^-7,muV=0.1)
                       , seed = 1
                       , proposer = sequential.proposer(sdProps=c(.15,.15))
                       , randInit = T
-                      , niter = 100)
+                      , niter = 500)
 
 
 class(samp_Seq$samp)
 ## The coda package already knows how to plot MCMC objects by default
-par('ps'=16, las = 1)
-plot(samp_Seq$samp)
+par('ps'=4, las = 0.2)
+plot(samp_Seq$samp[,2])
 
 
 
