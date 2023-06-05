@@ -18,7 +18,7 @@ repeatInfModel <- function(x=virus_params()
         dat <- data.frame(out)
         dat$run <- y
         dat$inf <- 0
-        if(dat$Mv[length(dat$Mv)]>0){dat$inf<-1}
+        if(dat$Mc[length(dat$Mc)]>0){dat$inf<-1}
         return(dat[1,c("run","inf")])  # just return the run, and whether infection was established
       })
       

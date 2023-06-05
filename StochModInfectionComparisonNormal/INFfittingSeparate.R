@@ -21,6 +21,7 @@ competenceDat$lowerInf <- bin$lower
 competenceDat$upperInf <- bin$upper
 #****************************************************
 
+
 # test for difference between species in dose-response curve using logistic regression
 noSppMod <- glm(NumInf/ITotal ~ ConcMax,data=competenceDat,family="binomial",weights=ITotal)
 SppMod <- glm(NumInf/ITotal ~ ConcMax+Moz,data=competenceDat,family="binomial",weights=ITotal)
@@ -43,8 +44,7 @@ virus_params <- function(   muV = 0.1
   return(as.list(environment()))
 
 
-#******** values for Aedes aegypti ************
-testAeg <- repeatInfModel(x=virus_params(infRate1=10^-7)
+testAeg <- repeatInfModel(x=virus_params(infRate1=10^-9)
                           ,startingVirus=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. aegypti"]
 )
 modAeg <- glm(num/denom~conc,family="binomial",weights=denom,data=testAeg)
@@ -54,19 +54,16 @@ predAeg <- cbind.data.frame("conc"=seq(4,10,0.5),"predVals"=predAeg)
 
 #*
 testAlb <- repeatInfModel(x=virus_params(infRate1=10^-7)
- ,startingVirus=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. albopictus"]
+                          ,startingVirus=10^competenceDat$ConcMax[competenceDat$Moz %in% "Ae. albopictus"]
 )
 modAlb <- glm(num/denom~conc,family="binomial",weights=denom,data=testAlb)
 predAlb<-predict(modAlb,type="response",newdata=newData)
 predAlb <- cbind.data.frame("conc"=seq(4,10,0.5),"predVals"=predAlb)
-#*********** values for Aedes albopictus *******
-
+#
 ggplot(competenceDat) +
   geom_point(aes(x=ConcMax,y=meanInf,col=Moz)) +
   geom_line(data=predAeg,aes(x=conc,y=predVals)) +
   geom_line(data=predAlb,aes(x=conc,y=predVals))
-
-
 
 
 
@@ -84,8 +81,9 @@ virus_params <- function(   muV = 0.1
   return(as.list(environment()))
 #*****************************************************************************
 init.pars.fit <- c(
-  log_infRate1=log(10^-9)
-  ,log_infRate2=log(10^-7.5)
+  log_muV=log(0.1)
+  ,log_infRate1=log(10^-9)
+  ,log_infRate2=log(10^-7)
 )
 
 objFXN(fit.params=init.pars.fit                                                          ## paramters to fit
@@ -121,10 +119,10 @@ ggplot(dat) +
 
 start <- Sys.time()
   trace<-3
-  #********initial parameter values****
+
   init.pars.fit <- c(
-    log_infRate1= -20.48997
-    ,log_infRate2=-19.00023  
+    log_infRate1=log(10^-9)
+    ,log_infRate2=log(10^-7)
   )
   
   #********optimise*******
@@ -134,76 +132,31 @@ start <- Sys.time()
                       , dat = competenceDat
                       , nSimulations = 30
                       , control = list(trace = trace
-                                       ,abstol=0.05
-                                       ,reltol=0.05
-                                       #,maxit=200
+                                       #,abstol=0.05
+                                       #,reltol=0.05
+                                       ,maxit=200
                                       )
-                      , method ="Nelder-Mead" #"SANN" #
+                      , method ="SANN" #"Nelder-Mead" #"SANN" #
                      )
   
   end <- Sys.time()
   end-start
-  # save fitted parameters
-  #AIC
+
   -2*(-optim.vals$value) + 2*2
-  
-  #saveRDS(optim.vals,"INFModelFitDiffParms110523NM.rds")
-  
-# same parms started 10^-7
-# 1st SANN -16.85324  
-# 2nd SANN -16.67233 
-# NM rel tol 0.05 converged -16.67233 $value [1] 10.85173   #23.703
 
-
-# diff parms started 10^-7
-# 1st SANN  log_infRate1 log_infRate2 
- # -19.19664    -16.90687
-# 2nd SANN
- # log_infRate1 log_infRate2 
-#  -20.48997    -19.00023 
-# NM rel to 0.05 converged log_infRate1 log_infRate2 
-                           # -20.64605    -19.00823    # 15.964
-
-
-#****************************
-nSims <- 100
-parmsAeg <- c(0.1
-              ,exp(-19.19664)
-              ,virus_params()$prodRate           
-              ,virus_params()$cellSpread        
-              ,virus_params()$escapeRate          
-              ,virus_params()$cMax)
-datAeg <- competenceDat[competenceDat$Moz %in% "Ae. aegypti",]
-
-cl <- makeCluster(detectCores()-1)
-clusterEvalQ(cl, {library(adaptivetau)})
-environment(repeatInfModel) <- .GlobalEnv
-clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","datAeg","parmsAeg"),
-                envir=environment())
-  
-  simsAeg <- parLapply(cl,1:nSims,function(y){
-    #set.seed(y)
-    s <- repeatInfModel(x=parmsAeg,startingVirus=10^datAeg$ConcMax)
-    s$run <- y
-    names(s) <-c("num","denom","conc","run")
-    return(s)
-  })
-  stopCluster(cl)
-  
-  simsAeg <- do.call(rbind,simsAeg) 
+# epilson 0.05 SANN 1 run
+ # $value
+ # [1] 6.706336
+#$par
+# log_infRate1 log_infRate2 
+# -20.50493    -16.78952   
   
 
-stats <- lapply(unique(simsAeg$run),function(z){
-  temp <- simsAeg[simsAeg$run %in% z,]
-  temp <- temp[!temp$num %in% NA,]
-  if(length(temp$num)>0){
-    mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
-    coefs <- as.vector(coef(mod))
-    return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
-  }
-  else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
-})
-  
-statsAeg <- do.call(rbind.data.frame,stats)
 
+
+  
+  #test <- readRDS("INFModelFitSepParms220713.rds")
+  MLEfits <- optim.vals$par 
+  estMuV <- exp(MLEfits)[1]
+  estinfRate <- exp(MLEfits)[2]
 

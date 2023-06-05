@@ -33,8 +33,8 @@ virus_params <- function(   muV = 0.1
                             ,prodRate2 = 10
                             ,cellSpread1 = 10^-3.5 
                             ,cellSpread2 = 10^-6
-                            ,escapeRate1 = 0.09
-                            ,escapeRate2 = 0.005
+                            ,escapeRate1 = 0.0005
+                            ,escapeRate2 = 0.0005
                             ,cMax = 400  
                             ,hMax= 900
 )

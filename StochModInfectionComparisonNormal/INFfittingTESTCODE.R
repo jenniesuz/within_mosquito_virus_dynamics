@@ -69,8 +69,8 @@ start <- Sys.time()
 trace<-3
 #********initial parameter values****
 init.pars.fit <- c(
-  log_infRate1= -20.08099  
-  ,log_infRate2= -17.36464 
+  log_infRate1=log(10^-8)
+  ,log_infRate2=log(10^-8)
 )
 
 #********optimise*******
@@ -80,15 +80,17 @@ optim.vals <- optim(par = init.pars.fit
                     , dat = testDat
                     , nSimulations = 30
                     , control = list(trace = trace
-                                     ,abstol=0.05
-                                     ,reltol=0.05
-                                     #,maxit=200
+                                     #,abstol=0.05
+                                     #,reltol=0.05
+                                     ,maxit=200
                     )
-                    , method ="Nelder-Mead" #"SANN" 
+                    , method ="SANN" #"Nelder-Mead" #"SANN" 
 )
 
 end <- Sys.time()
 end-start
+
+# Done using tau leap epilson 0.005. Takes c. 24hrs for first SANN
 
 # init params: 10^-8, 10^-8
 # SANN 1 diff parms: 
@@ -115,3 +117,10 @@ end-start
 #[1] 6.337965
 
 # very similar to initial SANN - just run with SANN?
+
+# try with epilon 0.05 and see time reduction - only takes 18 mins
+# sann objective function values
+#initial       value 60.396833
+#final         value 5.784653
+#log_infRate1 log_infRate2 
+#-8.673151    -7.548753 

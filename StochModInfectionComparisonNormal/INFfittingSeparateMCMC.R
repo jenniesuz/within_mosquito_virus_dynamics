@@ -12,7 +12,7 @@ source(here("StochModInfectionComparisonNormal//INFRepeatModelFunc.R"))
 #***likelihood****
 source(here("StochModInfectionComparisonNormal//INFfittingFuncsNLL.R"))
 
-require(boot); require(deSolve); require(ellipse); require(coda); require(parallel); require(mnormt); require(emdbook)
+require(boot); require(ellipse); require(coda); require(parallel); require(mnormt); require(emdbook)
 
 #******************data to fit to********************
 competenceDat <- read.csv(here("StochModInfectionComparisonNormal//datCiotaOnyango.csv"))
@@ -197,19 +197,21 @@ multiv.proposer <- function(covar, blockLS = list(rownames(covar))) {
 
 
 
-
+start <- Sys.time()
 
 samp_Seq <- mcmcSampler(init.params = c(infRate1=10^-9,infRate2=10^-7,muV=0.1)
                       , seed = 1
                       , proposer = sequential.proposer(sdProps=c(.15,.15))
                       , randInit = T
-                      , niter = 500)
+                      , niter = 1000)
 
+end <- Sys.time()
+end-start
 
 class(samp_Seq$samp)
 ## The coda package already knows how to plot MCMC objects by default
 par('ps'=4, las = 0.2)
-plot(samp_Seq$samp[,2])
+plot(samp_Seq$samp[,3])
 
 
 

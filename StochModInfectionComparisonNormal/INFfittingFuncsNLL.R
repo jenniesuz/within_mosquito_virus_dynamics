@@ -38,7 +38,7 @@ nll.binom <- function(parms=virus_params()
                      ,parms$escapeRate1          
                      ,parms$cMax)
   parmsAlb <- c(parms$muV 
-                ,parms$infRate2
+                ,parms$infRate1
                 ,parms$prodRate1              
                 ,parms$cellSpread1      
                 ,parms$escapeRate1      
@@ -75,8 +75,8 @@ nll.binom <- function(parms=virus_params()
     })
     
     statsAeg <- do.call(rbind.data.frame,stats)
-    
-    
+ 
+
     #*******************************
     
     #***********Aedes albopictus**************
@@ -118,19 +118,20 @@ nll.binom <- function(parms=virus_params()
     #***************************************************
     statsAeg<- statsAeg[!statsAeg$par1 %in% NA,]
     statsAlb<- statsAlb[!statsAlb$par1 %in% NA,]
-    
-    llAeg <- emdbook::dmvnorm(c(coef(modDatAeg))
-                  ,mu=c(mean(statsAeg[,2])
+    if(length(statsAeg)==0|length(statsAlb==0)){ll<- -10000000000}else{
+    llAeg <- dmvnorm(c(coef(modDatAeg))
+                  ,mean=c(mean(statsAeg[,2])
                           ,mean(statsAeg[,3]))
-                  ,Sigma=cov(statsAeg[,2:3]),log=T)
+                  ,sigma=cov(statsAeg[,2:3]),log=T)
 
     
-    llAlb <- emdbook::dmvnorm(c(coef(modDatAlb))
-                     ,mu=c(mean(statsAlb[,2])
+    llAlb <- dmvnorm(c(coef(modDatAlb))
+                     ,mean=c(mean(statsAlb[,2])
                              ,mean(statsAlb[,3]))
-                     ,Sigma=cov(statsAlb[,2:3]),log=T)
+                     ,sigma=cov(statsAlb[,2:3]),log=T)
     
      ll <- sum(llAeg,llAlb)
+}
   return(-ll)
 }
 #**********************************************************
@@ -148,7 +149,7 @@ nll.binom.mle2 <- function(logmuV=log(0.1)
                       ,cellSpread=10^-4
                       ,escapeRate=0.05
                       ,cMax=400
-                      ,dat=competenceDat
+                      ,dat=competenceDat[competenceDat$Moz %in% "Ae. aegypti",]
                       ,nSims=30){ 
   if(exp(logmuV)>1|exp(loginfRate)>0.005){ll<- -10000000}else{
   parms <- c("muV"=exp(logmuV) 
@@ -158,6 +159,8 @@ nll.binom.mle2 <- function(logmuV=log(0.1)
                 ,"escapeRate"=escapeRate         
                 ,"cMax"=cMax)
 
+  
+  
   # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
   cl <- makeCluster(detectCores()-1)
   clusterEvalQ(cl, {library(adaptivetau)})
@@ -181,7 +184,13 @@ nll.binom.mle2 <- function(logmuV=log(0.1)
     temp <- temp[!temp$num %in% NA,]
     if(length(temp$num)>0){
       mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
-      coefs <- as.vector(coef(mod))
+        sumM <- summary(mod)
+        cf <- coef(sumM)
+        pVals <- cf[7:8]
+        if( (pVals[1]<0.05) & (pVals[2]<0.05) ){
+        coefs <- as.vector(coef(mod))}else{
+          coefs <- c(NA,NA)
+        }
       return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
     }
     else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}

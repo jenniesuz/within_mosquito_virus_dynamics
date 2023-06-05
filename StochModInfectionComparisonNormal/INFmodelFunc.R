@@ -41,7 +41,7 @@ infectionModel <- function(startingVirus
   
   out<-ssa.adaptivetau(c(Gv = round(startingVirus*0.003,0), Mc = 0, Mv = 0),
                        transitions, lvrates, params, tf=120
-                       , tl.params=list(epsilon=0.05)) 
+                       , tl.params=list(epsilon=0.05))  #0.005
   return(data.frame(out))
 }
 
