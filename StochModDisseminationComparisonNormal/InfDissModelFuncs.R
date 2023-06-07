@@ -49,35 +49,36 @@ infDissModel <- function(startingVirus
   
   out <- ssa.adaptivetau(c(Gv = round(startingVirus*0.003,0), Mc = 0, Mv = 0, Hc = 0, Hv = 0),
                        transitions, lvrates, params, tf=400
-                       , tl.params=list(epsilon=0.0005)) 
+                       , tl.params=list(epsilon=0.005)) 
   return(data.frame(out))
 }
 
 
 dissSummaryFunc <- function(modelOutput){
   modelOutput$days <- round(modelOutput$time/24,1)  # create a column of .1 days
-  
+  # for each simulation (mosquito) 
   lastRunPerDay <- lapply(unique(modelOutput$run),function(y){
     runD <- modelOutput[modelOutput$run %in% y,]  # select single run
+    # for each '10th of a day' in each model run select the row that has the last time point and return the results
     maxTimePerDay <- lapply(unique(runD$days),function(z){
       mtemp <- runD[runD$days %in% z,]
       maxT <- mtemp[mtemp$t %in% max(mtemp$t),]
-      return(maxT[1,])
+      return(maxT[length(maxT[,1]),])
     })
-    maxTimePerDay <- do.call(rbind.data.frame,maxTimePerDay)
+    maxTimePerDay <- do.call(rbind.data.frame,maxTimePerDay) # return the results for each daily last time point
     return(maxTimePerDay)
   })
   lastRunPerDay <- do.call(rbind.data.frame,lastRunPerDay)
-  
+  # for each 10th of a day, see if any rows have Hc > 0 
   tempDiss <- lapply(unique(lastRunPerDay$days),function(a){
     subDat <- lastRunPerDay[lastRunPerDay$days %in% a,]
-    HvInf <- length(subDat$Hc[subDat$Hc>0])
-    propDiss <- HvInf/ length(unique(subDat$run))
-    return(c(a,propDiss))
+    HcInf <- length(subDat$Hc[subDat$Hc>0])
+    totalSize <- length(subDat$Hc)
+    #propDiss <- HcInf/ length(unique(subDat$run))
+    return(c(a,HcInf,totalSize))
   })
   tempDiss2 <- do.call(rbind.data.frame,tempDiss)
-  names(tempDiss2) <- c("time","proportionDisseminated")
+  names(tempDiss2) <- c("time","numberRunsDisseminated","totalSize")
 
   return(tempDiss2)
 }
-

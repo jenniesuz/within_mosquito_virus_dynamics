@@ -1,12 +1,14 @@
 
 library(here)
-source(here(".//StochModDisseminationComparisonNormal//InfDissRepeatModelFunc.R"))
-source(here(".//stochasticModels//InfDissModelFuncs.R"))
-
-
+library(binom)
 library(grid)
 library(gridExtra)
 library(ggplot2)
+source(here(".//stochModDisseminationComparisonNormal//InfDissModelFuncs.R"))
+source(here(".//StochModDisseminationComparisonNormal//InfDissRepeatModelFunc.R"))
+
+
+
 
 #******************data to fit to********************
 competenceDat <- read.csv(here(".//Data//datCiotaOnyango.csv"))
@@ -30,7 +32,7 @@ virus_params <- function(   muV = 0.1
 #3.673309e-09
 #***************test code**************
 startTime <- Sys.time()
-test <- repeatModel(virus_params(infRate=10^-8),startingVirus=10^9)
+test <- repeatModel(virus_params(infRate=10^-8),startingVirus=10^competenceDat$ConcMax[1])
 endTime <- Sys.time()
 endTime - startTime
 
