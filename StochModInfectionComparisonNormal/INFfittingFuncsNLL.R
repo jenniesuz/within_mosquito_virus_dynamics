@@ -118,7 +118,7 @@ nll.binom <- function(parms=virus_params()
     #***************************************************
     statsAeg<- statsAeg[!statsAeg$par1 %in% NA,]
     statsAlb<- statsAlb[!statsAlb$par1 %in% NA,]
-    if(length(statsAeg)==0|length(statsAlb==0)){ll<- -10000000000}else{
+    if(length(statsAeg)==0|length(statsAlb)==0){ll<- -10000000000}else{
     llAeg <- dmvnorm(c(coef(modDatAeg))
                   ,mean=c(mean(statsAeg[,2])
                           ,mean(statsAeg[,3]))

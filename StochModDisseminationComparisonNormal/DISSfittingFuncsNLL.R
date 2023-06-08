@@ -114,13 +114,57 @@ nll.binom <- function(parms=virus_params()
     
     print(length(statsAeg[,1]))
     
+    #***********Aedes albopictus*************
+    # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
+    cl <- makeCluster(detectCores()-1)
+    clusterEvalQ(cl, {library(adaptivetau)})
+    environment(repeatModel) <- .GlobalEnv
+    clusterExport(cl, varlist=c("nSims","infDissModel","dissSummaryFunc" ,"repeatModel","datAlb","parmsAlb"),
+                  envir=environment())
+    
+    simsAlb <- parLapply(cl,1:nSims,function(y){
+      #set.seed(y)
+      s <- repeatModel(x=parmsAlb,startingVirus=10^datAlb$ConcMax[1])
+      s <- do.call(rbind,s)
+      # get rid of runs where midgut infection didn't occur
+      s <- s[s$inf %in% 1,]   # make sure calculating the probability of dissemination given infection
+      calcDisseminations <- dissSummaryFunc(s)
+      calcDisseminations$run <- y
+      return(calcDisseminations)
+    })
+    stopCluster(cl)
+    
+    simsAlb <- do.call(rbind,simsAlb) 
+    
+    print(length(unique(simsAlb$run)))
+    
+    stats <- lapply(unique(simsAlb$run),function(z){
+      temp <- simsAlb[simsAlb$run %in% z,]
+      temp <- temp[!temp$num %in% NA,]
+      # cut of when all disseminated
+      temp <- temp[temp$numberRunsDisseminated<temp$totalSize,]
+      if(length(temp$num)>0){
+        mod <- glm(temp$numberRunsDisseminated/temp$totalSize~temp$time,family="binomial",weights=temp$totalSize)
+        coefs <- as.vector(coef(mod))
+        return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
+      }
+      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
+    })
+    
+    statsAlb <- do.call(rbind.data.frame,stats)
+    
+    print(length(statsAlb[,1]))
+    #*******************************
+
+    
+    
     #********observed data****************
     modDatAeg <- glm(datAeg$NumDiss/datAeg$NumInf~datAeg$DPIDissorTrans,family="binomial",weights=datAeg$NumInf)
     modDatAlb <- glm(datAlb$NumDiss/datAlb$NumInf~datAlb$DPIDissorTrans,family="binomial",weights=datAlb$NumInf)
     
     statsAeg <- statsAeg[!statsAeg$par1 %in% NA,]
     statsAlb <- statsAlb[!statsAlb$par1 %in% NA,]
-    if(length(statsAeg)==0|length(statsAlb==0)){ll<- -10000000000}else{
+    if(length(statsAeg)==0|length(statsAlb)==0){ll<- -10000000000}else{
       llAeg <- dmvnorm(c(coef(modDatAeg))
                        ,mean=c(mean(statsAeg[,2])
                                ,mean(statsAeg[,3]))
