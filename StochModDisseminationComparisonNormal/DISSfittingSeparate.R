@@ -113,3 +113,4 @@ start <- Sys.time()
   
 saveRDS(optim.vals,"DissModelFitSepAllParms230608.rds")
   
+fit <- readRDS("DissModelFitSepAllParms230608.rds")

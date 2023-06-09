@@ -188,6 +188,133 @@ return(-ll)
 
 
 
+#***********for mle2**********************************
+nll.binom.mle2 <- function(muV=0.1
+                      ,infRate=10^-8
+                      ,prodRate=1
+                      ,cellSpread=10^-4
+                      ,escapeRate=0.05
+                      ,cMax=400
+                      ,hMax=900
+                      ,dat=competenceDat[competenceDat$Moz %in% "Ae. aegypti",]
+                      ,nSims=30){ 
+  
+  if (prodRate > 1000   
+      | cellSpread > 1
+      | escapeRate > 1 ) {                                
+    ll <- -1000000000
+  }else{                                                      
+
+    parms <- c(muV 
+                  ,infRate
+                  ,exp(prodRate)           
+                  ,exp(cellSpread)        
+                  ,exp(escapeRate)         
+                  ,cMax
+                  ,hMax)
+
+    
+    
+    #*************************
+    # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
+    cl <- makeCluster(detectCores()-1)
+    clusterEvalQ(cl, {library(adaptivetau)})
+    environment(repeatModel) <- .GlobalEnv
+    clusterExport(cl, varlist=c("nSims","infDissModel","dissSummaryFunc" ,"repeatModel","dat","parms"),
+                  envir=environment())
+    
+    sims <- parLapply(cl,1:nSims,function(y){
+      #set.seed(y)
+      s <- repeatModel(x=parms,startingVirus=10^dat$ConcMax[1])
+      s <- do.call(rbind,s)
+      # get rid of runs where midgut infection didn't occur
+      s <- s[s$inf %in% 1,]   # make sure calculating the probability of dissemination given infection
+      calcDisseminations <- dissSummaryFunc(s)
+      calcDisseminations$run <- y
+      return(calcDisseminations)
+    })
+    stopCluster(cl)
+    
+    sims <- do.call(rbind,sims) 
+    
+    print(length(unique(sims$run)))
+    
+    
+    
+    
+    stats <- lapply(unique(sims$run),function(z){
+      temp <- sims[sims$run %in% z,]
+      temp <- temp[!temp$num %in% NA,]
+      if(length(temp$num)>0){
+        mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
+        sumM <- summary(mod)
+        cf <- coef(sumM)
+        pVals <- cf[7:8]
+        if( (pVals[1]<0.05) & (pVals[2]<0.05) ){
+          coefs <- as.vector(coef(mod))}else{
+            coefs <- c(NA,NA)
+          }
+        return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
+      }
+      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
+    })
+    
+    stats <- do.call(rbind.data.frame,stats)
+    
+    
+    
+    stats <- lapply(unique(sims$run),function(z){
+      temp <- sims[sims$run %in% z,]
+      temp <- temp[!temp$num %in% NA,]
+      # cut of when all disseminated
+      temp <- temp[temp$numberRunsDisseminated<temp$totalSize,]
+      if(length(temp$num)>0){
+        mod <- glm(temp$numberRunsDisseminated/temp$totalSize~temp$time,family="binomial",weights=temp$totalSize)
+        sumM <- summary(mod)
+        cf <- coef(sumM)
+        pVals <- cf[7:8]
+        if( (pVals[1]<0.05) & (pVals[2]<0.05) ){
+          coefs <- as.vector(coef(mod))}else{
+            coefs <- c(NA,NA)
+          }
+        return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
+      }
+      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
+    })
+    
+    
+    stats <- do.call(rbind.data.frame,stats)
+    
+    print(length(stats[,1]))
+    
+    
+    
+    #********observed data****************
+    modDat <- glm(dat$NumDiss/dat$NumInf~dat$DPIDissorTrans,family="binomial",weights=dat$NumInf)
+
+    stats <- stats[!stats$par1 %in% NA,]
+    if(length(stats)==0|length(stats)==0){ll<- -10000000000}else{
+      ll <- dmvnorm(c(coef(modDat))
+                       ,mean=c(mean(stats[,2])
+                               ,mean(stats[,3]))
+                       ,sigma=cov(stats[,2:3]),log=T)
+      
+      
+    }
+    
+  }
+  
+  return(-ll)
+}
+#**********************************************************
+
+
+
+
+
+
+
+
 # summarise fitted model output
 modOutFunc <- function(modelOutput=doseSimAegHND){
 infDat <- ddply(modelOutput,.(conc,run),summarise,sumRuns=sum(inf))
