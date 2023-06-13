@@ -12,7 +12,7 @@ source(here("StochModDisseminationComparisonNormal//InfDissRepeatModelFunc.R"))
 source(here("StochModDisseminationComparisonNormal//DISSfittingFuncsNLL.R"))
 
 #******************data to fit to********************
-competenceDat <- read.csv(here(".//Data//datCiotaOnyango.csv"))
+competenceDat <- read.csv(here("StochModInfectionComparisonNormal//datCiotaOnyango.csv"))
 competenceDat <- competenceDat[competenceDat$Ref %in% "Onyango 2020",]
 bin <- binom.confint(x=competenceDat$NumDiss,n=competenceDat$NumInf,method="exact")
 competenceDat$meanDiss <- bin$mean
@@ -47,9 +47,9 @@ plotDat
 #************get ball park starting parameters***********
 virus_params <- function(   muV = 0.1 #0.1
                             ,infRate = 10^-9 #10^-8.8
-                            ,prodRate = 170         # note these parameters don't matter for infection
-                            ,cellSpread =  0.00005       
-                            ,escapeRate = 0.25#0.005  #
+                            ,prodRate = 100#170         #
+                            ,cellSpread = 0.005 # 0.00005       
+                            ,escapeRate = 0.005 # 0.25#0.005  #
                             ,cMax = 400  
                             ,hMax = 900             #
 )
@@ -84,22 +84,30 @@ nll.binom(parms=virus_params()
           ,dat=competenceDat
           ,nSims=30)
 
-#****allowing all parameters to vary****
+
+
+
+
+
+
+
+#****all three different between species****
 start <- Sys.time()
   trace<-3
   
   #********initial parameter values****
   init.pars.fit <- c(
-    log_prodRate1=log(170)
+    log_prodRate1=log(170)  #170
     ,log_prodRate2=log(50)
     ,log_cellSpread1=log(0.00023)
     ,log_cellSpread2=log(0.00045)
     ,log_escapeRate1=log(0.25)
-    ,log_escapeRate2=log(0.00024))  
+    ,log_escapeRate2=log(0.00024)
+  )  
   #********optimise*******
   optim.vals <- optim(par = init.pars.fit
                       , objFXN
-                      , fixed.params = virus_params()
+                      , fixed.params = virus_params(muV=exp(-3.089103),infRate1=exp(-21.729066),infRate2=exp(-17.346550))
                       , dat = competenceDat
                       , control = list(trace = trace, maxit=200)
                       , method = "SANN" # 
@@ -109,7 +117,10 @@ start <- Sys.time()
   end-start
   # save fitted parameters
   #AIC
-  -2*(-optim.vals$value) + 2*2
+  -2*(-optim.vals$value) + 2*6
+  
+  
+  
   
 saveRDS(optim.vals,"DissModelFitSepAllParms230608.rds")
   

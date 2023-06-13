@@ -42,7 +42,7 @@ virus_params <- function(   muV = 0.1
 #*****************************************************************************
 
 #***********Likelihood function**********************************
-nll.binom <- function(parms=virus_params()
+nll.binom <- function(parms=virus_params(muV=0.04554279,infRate1=-9.436813,infRate2=-7.533511)
                       ,dat=competenceDat
                       ,nSims=30){ 
   
@@ -65,10 +65,10 @@ nll.binom <- function(parms=virus_params()
                   ,parms$cMax
                   ,parms$hMax)
     parmsAlb <- c(parms$muV 
-                  ,parms$infRate1
-                  ,parms$prodRate1              
-                  ,parms$cellSpread1      
-                  ,parms$escapeRate1      
+                  ,parms$infRate2
+                  ,parms$prodRate2             
+                  ,parms$cellSpread2      
+                  ,parms$escapeRate2      
                   ,parms$cMax
                   ,parms$hMax)
     
@@ -85,6 +85,7 @@ nll.binom <- function(parms=virus_params()
       #set.seed(y)
       s <- repeatModel(x=parmsAeg,startingVirus=10^datAeg$ConcMax[1])
       s <- do.call(rbind,s)
+      # check for runs that didn't work
       # get rid of runs where midgut infection didn't occur
       s <- s[s$inf %in% 1,]   # make sure calculating the probability of dissemination given infection
       calcDisseminations <- dissSummaryFunc(s)
@@ -188,6 +189,10 @@ return(-ll)
 
 
 
+
+
+
+
 #***********for mle2**********************************
 nll.binom.mle2 <- function(muV=0.1
                       ,infRate=10^-8
@@ -240,29 +245,6 @@ nll.binom.mle2 <- function(muV=0.1
     print(length(unique(sims$run)))
     
     
-    
-    
-    stats <- lapply(unique(sims$run),function(z){
-      temp <- sims[sims$run %in% z,]
-      temp <- temp[!temp$num %in% NA,]
-      if(length(temp$num)>0){
-        mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
-        sumM <- summary(mod)
-        cf <- coef(sumM)
-        pVals <- cf[7:8]
-        if( (pVals[1]<0.05) & (pVals[2]<0.05) ){
-          coefs <- as.vector(coef(mod))}else{
-            coefs <- c(NA,NA)
-          }
-        return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
-      }
-      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
-    })
-    
-    stats <- do.call(rbind.data.frame,stats)
-    
-    
-    
     stats <- lapply(unique(sims$run),function(z){
       temp <- sims[sims$run %in% z,]
       temp <- temp[!temp$num %in% NA,]
@@ -270,13 +252,7 @@ nll.binom.mle2 <- function(muV=0.1
       temp <- temp[temp$numberRunsDisseminated<temp$totalSize,]
       if(length(temp$num)>0){
         mod <- glm(temp$numberRunsDisseminated/temp$totalSize~temp$time,family="binomial",weights=temp$totalSize)
-        sumM <- summary(mod)
-        cf <- coef(sumM)
-        pVals <- cf[7:8]
-        if( (pVals[1]<0.05) & (pVals[2]<0.05) ){
-          coefs <- as.vector(coef(mod))}else{
-            coefs <- c(NA,NA)
-          }
+        coefs <- as.vector(coef(mod))
         return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
       }
       else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
