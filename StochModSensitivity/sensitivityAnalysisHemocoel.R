@@ -4,7 +4,7 @@ library(ggplot2)
 library(gridExtra)
 library(plyr)
 library(parallel)
-require(sensitivity)
+library(sensitivity)
 
 #**************************************************************************
 
@@ -229,15 +229,17 @@ diss <- lapply(unique(doseSim2$virusConc),function(x){
 
 diss2 <- do.call(rbind.data.frame,diss)
 
+diss2$conc <- factor(diss2$conc,levels=c(5,6,7,8))
 
 
-
-#*****************Plot*************
+#*****************Plot******
+cols <- c("#0571b0","#92c5de","#f4a582","#ca0020")
 propDiss <- ggplot(diss2) +
   geom_line(aes(x=time,y=proportionDisseminated,col=conc,group=conc)) +
   xlab("Time (days)") +
   ylab("Proportion of simulations with disseminated \n infection given infection in midgut") +
   ylim(0,1) +
+  scale_color_manual(values=cols) +
   labs(col=expression("Input virus particles (log"[10]*")")) +
   theme_set(theme_bw())  +
   theme(panel.border = element_blank()
