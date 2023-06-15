@@ -203,7 +203,7 @@ samp_Seq <- mcmcSampler(init.params = c(infRate1=10^-9,infRate2=10^-7,muV=0.1)
                       , seed = 1
                       , proposer = sequential.proposer(sdProps=c(.15,.15))
                       , randInit = T
-                      , niter = 1000)
+                      , niter = 500)
 
 end <- Sys.time()
 end-start
@@ -211,7 +211,7 @@ end-start
 class(samp_Seq$samp)
 ## The coda package already knows how to plot MCMC objects by default
 par('ps'=4, las = 0.2)
-plot(samp_Seq$samp[,3])
+plot(samp_Seq$samp[,1])
 
 
 

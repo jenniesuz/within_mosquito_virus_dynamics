@@ -32,111 +32,109 @@ nll.binom <- function(parms=virus_params()
   datAeg <- dat[dat$Moz %in% "Ae. aegypti",]
   datAlb <- dat[dat$Moz %in% "Ae. albopictus",]
   parmsAeg <- c(parms$muV 
-                     ,parms$infRate1 
-                     ,parms$prodRate1           
-                     ,parms$cellSpread1        
-                     ,parms$escapeRate1          
-                     ,parms$cMax)
+                ,parms$infRate1 
+                ,parms$prodRate1           
+                ,parms$cellSpread1        
+                ,parms$escapeRate1          
+                ,parms$cMax)
   parmsAlb <- c(parms$muV 
-                ,parms$infRate1
+                ,parms$infRate2
                 ,parms$prodRate1              
                 ,parms$cellSpread1      
                 ,parms$escapeRate1      
                 ,parms$cMax)
   
   #***********Aedes aegypti**************
-    # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
-    cl <- makeCluster(detectCores()-1)
-    clusterEvalQ(cl, {library(adaptivetau)})
-    environment(repeatInfModel) <- .GlobalEnv
-    clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","datAeg","parmsAeg"),
-                  envir=environment())
-    
-    simsAeg <- parLapply(cl,1:nSims,function(y){
-      #set.seed(y)
-      s <- repeatInfModel(x=parmsAeg,startingVirus=10^datAeg$ConcMax)
-      s$run <- y
-      names(s) <-c("num","denom","conc","run")
-      return(s)
-    })
+  # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
+  cl <- makeCluster(detectCores()-1)
+  clusterEvalQ(cl, {library(adaptivetau)})
+  environment(repeatInfModel) <- .GlobalEnv
+  clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","datAeg","parmsAeg"),
+                envir=environment())
+  
+  simsAeg <- parLapply(cl,1:nSims,function(y){
+    #set.seed(y)
+    s <- repeatInfModel(x=parmsAeg,startingVirus=10^c(5,5.5,6,6.5,7,7.5,8))
+    s$run <- y
+    names(s) <-c("num","denom","conc","run")
+    return(s)
+  })
   stopCluster(cl)
   
-    simsAeg <- do.call(rbind,simsAeg) 
-    
-    stats <- lapply(unique(simsAeg$run),function(z){
-      temp <- simsAeg[simsAeg$run %in% z,]
-      temp <- temp[!temp$num %in% NA,]
-      if(length(temp$num)>0){
+  simsAeg <- do.call(rbind,simsAeg) 
+  
+  stats <- lapply(unique(simsAeg$run),function(z){
+    temp <- simsAeg[simsAeg$run %in% z,]
+    temp <- temp[!temp$num %in% NA,]
+    if(length(temp$num)>0){
       mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
       coefs <- as.vector(coef(mod))
       return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
-      }
-      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
-    })
+    }
+    else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
+  })
+  
+  statsAeg <- do.call(rbind.data.frame,stats)
+  
+  
+  #*******************************
+  
+  #***********Aedes albopictus**************
+  # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
+  cl <- makeCluster(detectCores()-1)
+  clusterEvalQ(cl, {library(adaptivetau)})
+  environment(repeatInfModel) <- .GlobalEnv
+  clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","datAlb","parmsAlb"),
+                envir=environment())
+  
+  simsAlb <- parLapply(cl,1:nSims,function(y){
+    #set.seed(y)
+    s <- repeatInfModel(x=parmsAlb,startingVirus=10^c(5,5.5,6,6.5,7,7.5,8))
+    s$run <- y
+    names(s) <-c("num","denom","conc","run")
+    return(s)
+  })
+  stopCluster(cl)
+  
+  simsAlb <- do.call(rbind,simsAlb) 
+  
+  stats <- lapply(unique(simsAlb$run),function(z){
+    temp <- simsAlb[simsAlb$run %in% z,]
+    temp <- temp[!temp$num %in% NA,]
+    if(length(temp$num)>0){
+      mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
+      coefs <- as.vector(coef(mod))
+      return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
+    }
+    else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
+  })
+  
+  statsAlb <- do.call(rbind.data.frame,stats)
+  
+  #***********************data************************
+  modDatAeg <- glm(datAeg$NumInf/datAeg$ITotal~datAeg$ConcMax,family="binomial",weights=datAeg$ITotal)
+  modDatAlb <- glm(datAlb$NumInf/datAlb$ITotal~datAlb$ConcMax,family="binomial",weights=datAlb$ITotal)
+  
+  #***************************************************
+  statsAeg<- statsAeg[!statsAeg$par1 %in% NA,]
+  statsAlb<- statsAlb[!statsAlb$par1 %in% NA,]
+  if(length(statsAeg)==0|length(statsAlb)==0){ll<- -10000000000}else{
+    llAeg <- mvtnorm::dmvnorm(c(coef(modDatAeg))
+                     ,mean=c(mean(statsAeg[,2])
+                             ,mean(statsAeg[,3]))
+                     ,sigma=cov(statsAeg[,2:3]),log=T)
     
-    statsAeg <- do.call(rbind.data.frame,stats)
- 
-
-    #*******************************
     
-    #***********Aedes albopictus**************
-    # replicate experiments across virus concentrations - for each virus concentration simulate 30 mosquitoes (1 experiment) 100 times
-    cl <- makeCluster(detectCores()-1)
-    clusterEvalQ(cl, {library(adaptivetau)})
-    environment(repeatInfModel) <- .GlobalEnv
-    clusterExport(cl, varlist=c("nSims","infectionModel","repeatInfModel","datAlb","parmsAlb"),
-                  envir=environment())
-    
-    simsAlb <- parLapply(cl,1:nSims,function(y){
-      #set.seed(y)
-      s <- repeatInfModel(x=parmsAlb,startingVirus=10^datAlb$ConcMax)
-      s$run <- y
-      names(s) <-c("num","denom","conc","run")
-      return(s)
-    })
-    stopCluster(cl)
-    
-    simsAlb <- do.call(rbind,simsAlb) 
-    
-    stats <- lapply(unique(simsAlb$run),function(z){
-      temp <- simsAlb[simsAlb$run %in% z,]
-      temp <- temp[!temp$num %in% NA,]
-      if(length(temp$num)>0){
-        mod <- glm(temp$num/temp$denom~temp$conc,family="binomial",weights=temp$denom)
-        coefs <- as.vector(coef(mod))
-        return(cbind.data.frame(run=temp$run[1],par1=coefs[1],par2=coefs[2]))
-      }
-      else{return(cbind.data.frame(run=temp$run[1],par1=NA,par2=NA))}
-    })
-    
-    statsAlb <- do.call(rbind.data.frame,stats)
-
-    #***********************data************************
-    modDatAeg <- glm(datAeg$NumInf/datAeg$ITotal~datAeg$ConcMax,family="binomial",weights=datAeg$ITotal)
-    modDatAlb <- glm(datAlb$NumInf/datAlb$ITotal~datAlb$ConcMax,family="binomial",weights=datAlb$ITotal)
-
-    #***************************************************
-    statsAeg<- statsAeg[!statsAeg$par1 %in% NA,]
-    statsAlb<- statsAlb[!statsAlb$par1 %in% NA,]
-    if(length(statsAeg)==0|length(statsAlb)==0){ll<- -10000000000}else{
-    llAeg <- dmvnorm(c(coef(modDatAeg))
-                  ,mean=c(mean(statsAeg[,2])
-                          ,mean(statsAeg[,3]))
-                  ,sigma=cov(statsAeg[,2:3]),log=T)
-
-    
-    llAlb <- dmvnorm(c(coef(modDatAlb))
+    llAlb <- mvtnorm::dmvnorm(c(coef(modDatAlb))
                      ,mean=c(mean(statsAlb[,2])
                              ,mean(statsAlb[,3]))
                      ,sigma=cov(statsAlb[,2:3]),log=T)
     
-     ll <- sum(llAeg,llAlb)
-}
+    ll <- sum(llAeg,llAlb)
+  }
   return(-ll)
 }
 #**********************************************************
-
-
 
 
 
