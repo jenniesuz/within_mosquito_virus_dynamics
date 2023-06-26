@@ -147,16 +147,10 @@ virus_params <- function(   muV = 0.09676457
   return(as.list(environment()))
 
 #*******************ae. aeg**********************
-#exp(optim.vals$par[1])   # 914.8256
-#(exp(optim.vals$par[2])) # 227.3631
-#(exp(optim.vals$par[3])) # 2.0246e-05 
-#(exp(optim.vals$par[4])) # 0.0006108672 
-#(exp(optim.vals$par[5])) # 0.3111439 
-#(exp(optim.vals$par[6])) # 9.631713e-05 
 
 #*
-parmsAeg <- virus_params(prodRate=914.8256,cellSpread=2.0246e-05,escapeRate=0.3111439 )
-parmsAlb <- virus_params(infRate= 10^-7.519721,prodRate=227.3631,cellSpread=0.0006108672 ,escapeRate=9.631713e-05  )
+parmsAeg <- virus_params(infRate = 1.284587e-09,prodRate=5.736042e+00,cellSpread=8.939190e-04,escapeRate=3.187694e-01 )
+parmsAlb <- virus_params(infRate= 10^-7.519721,prodRate=1.742910e+01,cellSpread= 7.508513e-05,escapeRate=9.880848e-04 )
 nSims <- 30
 #*
 cl <- makeCluster(detectCores()-1)
@@ -205,7 +199,7 @@ simsAlb <- do.call(rbind,simsAlb)
 
 
 
-ggplot(competenceDat) +
+dissPlot <- ggplot(competenceDat) +
   geom_line(data=simsAeg,aes(x=time,y=numberRunsDisseminated/totalSize,group=run),linetype=3,alpha=0.7,col="royalblue4") +
   geom_line(data=simsAlb,aes(x=time,y=numberRunsDisseminated/totalSize,group=run),linetype=3,alpha=0.7,col="dodgerblue") +
   geom_errorbar(aes(x=DPIDissorTrans,ymin=lowerDiss,ymax=upperDiss),alpha=0.5) +
@@ -228,6 +222,11 @@ ggplot(competenceDat) +
         ,strip.background = element_rect(fill="white",color="white")
   )  
 
+library(grid)
+library(gridExtra)
 
-
-
+pdf(file="fig_midgutHemocoelmodelfits.pdf",width=5,height=3.5)
+grid.arrange(infPlot,dissPlot,ncol=2
+             ,left = textGrob("P ", rot = 90, vjust = 1,gp=gpar(fontsize=10))
+)
+dev.off()

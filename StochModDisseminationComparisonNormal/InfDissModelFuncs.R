@@ -49,7 +49,7 @@ infDissModel <- function(startingVirus
   
   out <- ssa.adaptivetau(c(Gv = round(startingVirus*0.003,0), Mc = 0, Mv = 0, Hc = 0, Hv = 0),
                        transitions, lvrates, params, tf=400
-                       , tl.params=list(epsilon=0.005)) 
+                       , tl.params=list(epsilon=0.01)) 
   return(data.frame(out))
 }
 
